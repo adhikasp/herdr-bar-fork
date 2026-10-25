@@ -6,7 +6,7 @@ use crate::config::Config;
 use crate::fuzzy::{match_prepared, split_query, Match, Term};
 use crate::fxhash::FxHashMap;
 use crate::icons;
-use crate::items::{build_items, build_pane_items, Item, KIND_AGENT, KIND_PANE, KIND_SPACE, KIND_TAB};
+use crate::items::{build_items, build_pane_items, Item, KIND_AGENT, KIND_COMMAND, KIND_PANE, KIND_SPACE, KIND_TAB};
 use crate::keys::{Event, KeyDecoder, MouseKind};
 use crate::mru::Recents;
 use crate::paint::Painter;
@@ -20,7 +20,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::OnceLock;
 use std::time::Instant;
 
-pub const SCOPES: &[&str] = &["all", "agent", "pane", "tab", "blocked"];
+pub const SCOPES: &[&str] = &["all", "agent", "pane", "tab", "blocked", "command"];
 
 fn scope_sigil(text: &str) -> Option<&'static str> {
     Some(match text {
@@ -28,6 +28,7 @@ fn scope_sigil(text: &str) -> Option<&'static str> {
         "%" => "pane",
         "$" => "tab",
         "!" => "blocked",
+        ">" | ":" => "command",
         _ => return None,
     })
 }
@@ -39,6 +40,7 @@ fn scope_chip(scope: &str) -> &'static str {
         "pane" => "% panes",
         "tab" => "$ shells",
         "blocked" => "! needs you",
+        "command" => "> commands",
         _ => "",
     }
 }
@@ -51,6 +53,8 @@ pub const STATUS_TTL: f64 = 2.5;
 
 pub const PLACEHOLDER: &str = "jump to a tab, pane or agent…    @ agents   % panes   $ shells   ! needs you";
 pub const PLACEHOLDER_SHORT: &str = "jump to a tab, pane or agent…";
+pub const PLACEHOLDER_NORMAL: &str = "j/k move    / search    > commands    @ agents    % panes    $ shells    ! needs you";
+pub const PLACEHOLDER_NORMAL_SHORT: &str = "j/k move · / search · > commands";
 
 /// time.monotonic(): seconds on a clock that only moves forward. It starts
 /// far from zero, as Python's does, so "never" (0.0) is long ago.
@@ -138,6 +142,8 @@ pub struct Pool {
     /// The tab and agent items, then the pane items.
     items: Vec<Item>,
     item_count: usize,
+    /// Where the command rows start: after the tab, agent and pane items.
+    command_start: usize,
 }
 
 impl Pool {
@@ -156,7 +162,9 @@ impl Pool {
         }
         let item_count = items.len();
         items.extend(build_pane_items(snapshot));
-        Pool { workspace_count, items, item_count }
+        let command_start = items.len();
+        items.extend(crate::commands::build_items(snapshot));
+        Pool { workspace_count, items, item_count, command_start }
     }
 }
 
@@ -168,6 +176,10 @@ pub struct Bar {
     /// Rows point into this: the tab and agent items, then the pane items.
     pub pool: Vec<Item>,
     item_count: usize,
+    command_start: usize,
+    /// With `modal` on: whether keys type a query (true) or navigate (false).
+    pub searching: bool,
+    plugin_actions_seen: bool,
     pub rows: Vec<Row>,
     pub query: String,
     pub cursor: usize,
@@ -204,6 +216,7 @@ impl Bar {
         theme.agent_icons = icons::enabled(&config.agent_icons);
         let preview = config.preview_starts_on();
         let scope = config.scope;
+        let modal = config.modal;
         Bar {
             client,
             config,
@@ -211,6 +224,9 @@ impl Bar {
             theme,
             pool: Vec::new(),
             item_count: 0,
+            command_start: 0,
+            searching: !modal,
+            plugin_actions_seen: false,
             rows: Vec::new(),
             query: String::new(),
             cursor: 0,
@@ -247,7 +263,7 @@ impl Bar {
     }
 
     pub fn pane_items(&self) -> &[Item] {
-        &self.pool[self.item_count..]
+        &self.pool[self.item_count..self.command_start]
     }
 
     // -- data ---------------------------------------------------------------
@@ -309,6 +325,7 @@ impl Bar {
             }
         }
         self.item_count = pool.item_count;
+        self.command_start = pool.command_start;
         let old = std::mem::replace(&mut self.pool, pool.items);
         crate::par::drop_aside(old, self.pool.len() >= crate::par::MIN_PARALLEL);
         self.last_refresh = monotonic();
@@ -336,6 +353,7 @@ impl Bar {
             "agent" => item.kind == KIND_AGENT,
             "pane" => item.kind == KIND_PANE,
             "tab" => item.kind == KIND_TAB,
+            "command" => item.kind == KIND_COMMAND,
             "blocked" => item.status == "blocked" || item.status == "done",
             _ => true,
         }
@@ -343,8 +361,9 @@ impl Bar {
 
     fn filter(&self) -> Vec<Row> {
         let source: Vec<usize> = match self.scope {
-            "pane" => (self.item_count..self.pool.len()).collect(),
-            "all" => (0..self.pool.len()).collect(),
+            "pane" => (self.item_count..self.command_start).collect(),
+            "command" => (self.command_start..self.pool.len()).collect(),
+            "all" => (0..self.command_start).collect(),
             _ => (0..self.item_count).collect(),
         };
         let candidates: Vec<usize> = source.into_iter().filter(|&i| self.in_scope(&self.pool[i])).collect();
@@ -514,8 +533,47 @@ impl Bar {
         self.set_query(query, Some(cursor));
     }
 
+    /// Text typed in the modal list mode: vim-style moves, and the keys that
+    /// start a search. True when the text was handled and must not be typed.
+    fn normal_text(&mut self, text: &str) -> bool {
+        if !self.config.modal || self.searching {
+            return false;
+        }
+        match text {
+            "j" => self.move_by(1, true),
+            "k" => self.move_by(-1, true),
+            "g" => {
+                self.selected = 0;
+                self.dirty = true;
+            }
+            "G" => {
+                self.selected = self.rows.len().saturating_sub(1);
+                self.dirty = true;
+            }
+            "/" => {
+                self.searching = true;
+                self.dirty = true;
+            }
+            ">" | ":" => {
+                self.scope = "command";
+                self.selected = 0;
+                self.searching = true;
+                self.rebuild(None);
+            }
+            // The scope sigils filter the list without starting a search.
+            "@" | "%" | "$" | "!" => return false,
+            _ => {}
+        }
+        true
+    }
+
     pub fn handle_key(&mut self, name: &str) -> Option<Outcome> {
         match name {
+            "esc" if self.config.modal && self.searching => {
+                self.searching = false;
+                self.scope = self.config.scope;
+                self.set_query(String::new(), None);
+            }
             "esc" | "ctrl+c" | "ctrl+g" | "ctrl+q" => return Some(Outcome::Cancel),
             "enter" => return if self.rows.is_empty() { None } else { Some(Outcome::Confirm) },
             "up" | "ctrl+p" | "ctrl+k" => self.move_by(-1, true),
@@ -923,7 +981,13 @@ impl Bar {
 
         let mut rows: Vec<String> = Vec::new();
         let chip = scope_chip(self.scope);
-        let placeholder = if layout.inner_width >= 62 { PLACEHOLDER } else { PLACEHOLDER_SHORT };
+        let wide = layout.inner_width >= 62;
+        let placeholder = match (self.config.modal && !self.searching, wide) {
+            (true, true) => PLACEHOLDER_NORMAL,
+            (true, false) => PLACEHOLDER_NORMAL_SHORT,
+            (false, true) => PLACEHOLDER,
+            (false, false) => PLACEHOLDER_SHORT,
+        };
         if let Some((_, old_title)) = &self.pending_rename {
             rows.push(format!(
                 " {}",
@@ -1054,6 +1118,11 @@ impl Bar {
         if self.pending_rename.is_some() {
             return render::render_footer(&self.theme, width, &[("⏎", "save"), ("esc", "keep"), ("^u", "clear")], "renaming");
         }
+        if self.config.modal && !self.searching {
+            let hints = [("jk", "move"), ("⏎", "go"), ("/", "search"), (">", "commands"), ("^r", "rename"), ("esc", "quit")];
+            let hints = if width < 52 { &hints[..2] } else { &hints[..] };
+            return render::render_footer(&self.theme, width, hints, &self.rows.len().to_string());
+        }
         let close_key = if self.backspace_closes() { "⌫" } else { "⌦" };
         let mut hints: Vec<(&str, &str)> = vec![
             ("↑↓", "move"),
@@ -1071,7 +1140,8 @@ impl Bar {
         }
         let total = match self.scope {
             "pane" => self.pane_items().len(),
-            "all" => self.pool.len(),
+            "command" => self.pool.len() - self.command_start,
+            "all" => self.command_start,
             _ => self.items().len(),
         };
         let shown = self.rows.len();
@@ -1117,6 +1187,12 @@ impl Bar {
             if now - self.last_refresh >= self.config.refresh_ms as f64 / 1000.0 {
                 self.refresh(false);
             }
+            if !self.plugin_actions_seen && crate::commands::plugin_actions_ready() {
+                // The plugin actions load on a thread; rebuild once they are in.
+                self.plugin_actions_seen = true;
+                self.snapshot_answer.clear();
+                self.refresh(false);
+            }
             self.pump_preview(self.list_height);
             self.pump_ages();
             if self.status.as_deref().map(|s| !s.is_empty()).unwrap_or(false) && now >= self.status_until {
@@ -1153,10 +1229,15 @@ impl Bar {
             let found = match event {
                 Event::Key(name) => self.handle_key(name),
                 Event::Text(text) => {
-                    self.insert(text, false);
+                    if !self.normal_text(text) {
+                        self.insert(text, false);
+                    }
                     None
                 }
                 Event::Paste(text) => {
+                    if self.config.modal && !self.searching {
+                        continue;
+                    }
                     self.insert(text, true);
                     None
                 }

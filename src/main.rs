@@ -4,6 +4,7 @@ mod age;
 mod app;
 mod auto_title;
 mod cli;
+mod commands;
 mod client;
 mod config;
 mod fuzzy;

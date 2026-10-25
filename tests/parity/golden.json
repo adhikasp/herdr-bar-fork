@@ -1,6 +1,11 @@
 {
  "bar-broken-config": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -146,7 +151,12 @@
   ]
  },
  "bar-bulk": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -964,6 +974,10 @@
  "bar-close": {
   "changes": [
    [
+    "ping",
+    {}
+   ],
+   [
     "tab.close",
     {
      "tab_id": "w1:t3"
@@ -1244,6 +1258,10 @@
  },
  "bar-close-backspace": {
   "changes": [
+   [
+    "ping",
+    {}
+   ],
    [
     "tab.close",
     {
@@ -1544,7 +1562,12 @@
   ]
  },
  "bar-close-panic": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -1718,7 +1741,12 @@
   ]
  },
  "bar-colors": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -1901,6 +1929,10 @@
  "bar-empty": {
   "changes": [
    [
+    "ping",
+    {}
+   ],
+   [
     "workspace.focus",
     {
      "workspace_id": "w2"
@@ -2046,7 +2078,12 @@
   "reads": []
  },
  "bar-icons": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -2386,6 +2423,10 @@
  "bar-jump-agent": {
   "changes": [
    [
+    "ping",
+    {}
+   ],
+   [
     "tab.focus",
     {
      "tab_id": "w1:t3"
@@ -2580,7 +2621,12 @@
   ]
  },
  "bar-jump-nothing": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -2952,6 +2998,10 @@
  "bar-jump-pane": {
   "changes": [
    [
+    "ping",
+    {}
+   ],
+   [
     "tab.focus",
     {
      "tab_id": "w1:t1"
@@ -3183,6 +3233,10 @@
  },
  "bar-jump-query": {
   "changes": [
+   [
+    "ping",
+    {}
+   ],
    [
     "tab.focus",
     {
@@ -3471,6 +3525,10 @@
  },
  "bar-jump-workspace": {
   "changes": [
+   [
+    "ping",
+    {}
+   ],
    [
     "workspace.focus",
     {
@@ -3822,6 +3880,10 @@
  "bar-mouse": {
   "changes": [
    [
+    "ping",
+    {}
+   ],
+   [
     "tab.focus",
     {
      "tab_id": "w1:t5"
@@ -4080,7 +4142,12 @@
   ]
  },
  "bar-mouse-off": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -4222,7 +4289,12 @@
   ]
  },
  "bar-move": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -4692,7 +4764,12 @@
   ]
  },
  "bar-narrow": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -4840,7 +4917,12 @@
   ]
  },
  "bar-no-running-time": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -4968,7 +5050,12 @@
   ]
  },
  "bar-no-selection": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -5150,7 +5237,12 @@
   ]
  },
  "bar-odd-keys": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -5520,7 +5612,12 @@
   ]
  },
  "bar-open-cancel": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -5666,7 +5763,12 @@
   ]
  },
  "bar-paste": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -5896,7 +5998,12 @@
   ]
  },
  "bar-preview-off": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -6126,7 +6233,12 @@
   ]
  },
  "bar-preview-on": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -6388,7 +6500,12 @@
   ]
  },
  "bar-preview-toggle": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -6684,6 +6801,10 @@
  "bar-recents": {
   "changes": [
    [
+    "ping",
+    {}
+   ],
+   [
     "tab.focus",
     {
      "tab_id": "w2:t2"
@@ -6843,6 +6964,10 @@
  },
  "bar-rename": {
   "changes": [
+   [
+    "ping",
+    {}
+   ],
    [
     "tab.rename",
     {
@@ -7444,7 +7569,12 @@
   ]
  },
  "bar-rename-cancel": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -7842,7 +7972,12 @@
   ]
  },
  "bar-rename-editing": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -8408,7 +8543,12 @@
   ]
  },
  "bar-rename-pane": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -8646,7 +8786,12 @@
   ]
  },
  "bar-scopes": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -8795,35 +8940,35 @@
    },
    {
     "after": "b'\\t'",
-    "bytes": 1561,
+    "bytes": 1491,
     "screen": [
-     " ❯  jump to a tab, pane or agent…    @ agents   % panes   $ shells   ! needs you            everything  ‖ 1-3:[\"38;5;12\", null, true, false, false] 3-4:[null, null, false, false, true] 4-80:[\"38;5;8\", null, false, false, false] 91-103:[\"38;5;12\", null, true, false, false]",
+     " ❯  jump to a tab, pane or agent…    @ agents   % panes   $ shells   ! needs you            > commands  ‖ 1-3:[\"38;5;12\", null, true, false, false] 3-4:[null, null, false, false, true] 4-80:[\"38;5;8\", null, false, false, false] 91-103:[\"38;5;12\", null, true, false, false]",
      " ──────────────────────────────────────────────────────────────────────────────────────────────────────  ‖ 1-103:[\"38;5;8\", null, false, false, false]",
-     " ▌ ◉ retry queue backoff                    codex · 8m · needs you │ retry queue backoff  ‖ 1-3:[\"38;5;12\", \"48;5;237\", false, false, false] 3-5:[\"38;5;9\", \"48;5;237\", false, false, false] 5-24:[null, \"48;5;237\", true, false, false] 24-44:[null, \"48;5;237\", false, false, false] 44-49:[\"38;2;16;163;127\", \"48;5;237\", false, false, false] 49-52:[\"38;5;8\", \"48;5;237\", false, false, false] 52-54:[\"38;5;249\", \"48;5;237\", false, false, false] 54-57:[\"38;5;8\", \"48;5;237\", false, false, false] 57-66:[\"38;5;9\", \"48;5;237\", false, false, false] 66-69:[\"38;5;8\", null, false, false, false] 69-88:[null, null, true, false, false]",
-     "   ◐ Check weekly explanation display    current · 2h04m · working │ /Users/dev/workspace/erestor  ‖ 3-37:[\"38;2;199;138;31\", null, false, false, false] 41-48:[\"38;5;12\", null, false, false, false] 48-51:[\"38;5;8\", null, false, false, false] 51-56:[\"38;5;249\", null, false, false, false] 56-59:[\"38;5;8\", null, false, false, false] 59-66:[\"38;2;199;138;31\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false] 69-97:[\"38;5;249\", null, false, false, false]",
-     "   ◉ cards meaningless                   codex · 3h41m · needs you │ ──────────────────────────────────  ‖ 3-5:[\"38;5;9\", null, false, false, false] 41-46:[\"38;2;16;163;127\", null, false, false, false] 46-49:[\"38;5;8\", null, false, false, false] 49-54:[\"38;5;249\", null, false, false, false] 54-57:[\"38;5;8\", null, false, false, false] 57-66:[\"38;5;9\", null, false, false, false] 66-103:[\"38;5;8\", null, false, false, false]",
-     "   ● library depth battery                  @battery · 1d2h · done │  ‖ 3-5:[\"38;5;14\", null, false, false, false] 44-52:[\"38;2;217;119;87\", null, false, false, false] 52-55:[\"38;5;8\", null, false, false, false] 55-59:[\"38;5;249\", null, false, false, false] 59-62:[\"38;5;8\", null, false, false, false] 62-66:[\"38;5;14\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false]",
-     "   ◐ Redesign week loading screen — Start…  claude · 12m · working │  ‖ 3-33:[\"38;2;199;138;31\", null, false, false, false] 33-36:[\"38;5;8\", null, false, false, false] 36-42:[\"38;5;249\", null, false, false, false] 44-50:[\"38;2;217;119;87\", null, false, false, false] 50-53:[\"38;5;8\", null, false, false, false] 53-56:[\"38;5;249\", null, false, false, false] 56-59:[\"38;5;8\", null, false, false, false] 59-66:[\"38;2;199;138;31\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false]",
-     "   ✓ migrations                            erestor · gemini · idle │  ‖ 3-5:[\"38;5;10\", null, false, false, false] 43-50:[\"38;5;249\", null, false, false, false] 50-53:[\"38;5;8\", null, false, false, false] 53-59:[\"38;2;66;133;244\", null, false, false, false] 59-62:[\"38;5;8\", null, false, false, false] 62-66:[\"38;5;10\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false]",
-     "   · server                                       pacebeats · 4d3h │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 50-59:[\"38;5;249\", null, false, false, false] 59-62:[\"38;5;8\", null, false, false, false] 62-66:[\"38;5;249\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false]",
-     "   · server logs — server                   pacebeats · 55m · pane │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 16-19:[\"38;5;8\", null, false, false, false] 19-25:[\"38;5;249\", null, false, false, false] 44-53:[\"38;5;249\", null, false, false, false] 53-56:[\"38;5;8\", null, false, false, false] 56-59:[\"38;5;249\", null, false, false, false] 59-62:[\"38;5;8\", null, false, false, false] 62-66:[\"38;5;249\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false]",
-     "   · web server — server                   pacebeats · 4d3h · pane │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 15-18:[\"38;5;8\", null, false, false, false] 18-24:[\"38;5;249\", null, false, false, false] 43-52:[\"38;5;249\", null, false, false, false] 52-55:[\"38;5;8\", null, false, false, false] 55-59:[\"38;5;249\", null, false, false, false] 59-62:[\"38;5;8\", null, false, false, false] 62-66:[\"38;5;249\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false]",
-     "   · logs                                          pacebeats · 26m │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 51-60:[\"38;5;249\", null, false, false, false] 60-63:[\"38;5;8\", null, false, false, false] 63-66:[\"38;5;249\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false]",
-     "   ◉ erestor                                     needs you · space │  ‖ 3-5:[\"38;5;9\", null, false, false, false] 49-58:[\"38;5;9\", null, false, false, false] 58-61:[\"38;5;8\", null, false, false, false] 61-66:[\"38;5;249\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false]",
-     "   ◐ pacebeats                           current · working · space │ ● Ready · pacebeats  ‖ 3-14:[\"38;2;199;138;31\", null, false, false, false] 41-48:[\"38;5;12\", null, false, false, false] 48-51:[\"38;5;8\", null, false, false, false] 51-58:[\"38;2;199;138;31\", null, false, false, false] 58-61:[\"38;5;8\", null, false, false, false] 61-66:[\"38;5;249\", null, false, false, false] 66-69:[\"38;5;8\", null, false, false, false] 69-88:[\"38;5;249\", null, false, false, false]",
-     "                                                                   │   Capacity: 0/32 · new sessions r…  ‖ 66-69:[\"38;5;8\", null, false, false, false] 69-103:[\"38;5;249\", null, false, false, false]",
-     "                                                                   │  ‖ 66-69:[\"38;5;8\", null, false, false, false]",
-     "                                                                   │ > the cards still read as meaning…  ‖ 66-69:[\"38;5;8\", null, false, false, false] 69-103:[\"38;5;249\", null, false, false, false]",
-     "                                                                   │  ‖ 66-69:[\"38;5;8\", null, false, false, false]",
-     "                                                                   │ ⏺ Reading src/components/WeekCard…  ‖ 66-69:[\"38;5;8\", null, false, false, false] 69-103:[\"38;5;249\", null, false, false, false]",
-     "                                                                   │   Found 3 call sites that render …  ‖ 66-69:[\"38;5;8\", null, false, false, false] 69-103:[\"38;5;249\", null, false, false, false]",
+     " ▌ · Close pane                                              Pane┃ │ Close pane  ‖ 1-3:[\"38;5;12\", \"48;5;237\", false, false, false] 3-5:[\"38;5;8\", \"48;5;237\", false, false, false] 5-15:[null, \"48;5;237\", true, false, false] 15-61:[null, \"48;5;237\", false, false, false] 61-65:[\"38;5;249\", \"48;5;237\", false, false, false] 65-69:[\"38;5;8\", null, false, false, false] 69-79:[null, null, true, false, false]",
+     "   · Close tab                                                Tab┃ │ Pane  ‖ 3-5:[\"38;5;8\", null, false, false, false] 62-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false] 69-73:[\"38;5;249\", null, false, false, false]",
+     "   · Close workspace                                    Workspace┃ │ ──────────────────────────────────  ‖ 3-5:[\"38;5;8\", null, false, false, false] 56-65:[\"38;5;249\", null, false, false, false] 65-103:[\"38;5;8\", null, false, false, false]",
+     "   · Focus pane down                                         Pane┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 61-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Focus pane left                                         Pane┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 61-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Focus pane right                                        Pane┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 61-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Focus pane up                                           Pane┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 61-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · New tab                                                  Tab┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 62-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · New workspace                                      Workspace┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 56-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Next tab                                                 Tab┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 62-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Next workspace                                     Workspace┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 56-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Previous tab                                             Tab┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 62-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Previous workspace                                 Workspace┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 56-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Reload herdr config                                    Herdr┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 60-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Split pane down                                         Pane┃ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 61-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Split pane right                                        Pane│ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 61-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Swap pane down                                          Pane│ │  ‖ 3-5:[\"38;5;8\", null, false, false, false] 61-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false]",
+     "   · Swap pane left                                          Pane│ │ no output yet  ‖ 3-5:[\"38;5;8\", null, false, false, false] 61-65:[\"38;5;249\", null, false, false, false] 65-69:[\"38;5;8\", null, false, false, false] 69-82:[\"38;5;249\", null, false, false, false]",
      " ──────────────────────────────────────────────────────────────────────────────────────────────────────  ‖ 1-103:[\"38;5;8\", null, false, false, false]",
-     " ↑↓ move  ⏎ jump  ⇥ scope  ⌫ close  ^r rename  ^o preview  esc quit                                  12  ‖ 1-3:[\"38;5;249\", null, false, false, false] 3-10:[\"38;5;8\", null, false, false, false] 10-11:[\"38;5;249\", null, false, false, false] 11-18:[\"38;5;8\", null, false, false, false] 18-19:[\"38;5;249\", null, false, false, false] 19-27:[\"38;5;8\", null, false, false, false] 27-28:[\"38;5;249\", null, false, false, false] 28-36:[\"38;5;8\", null, false, false, false] 36-38:[\"38;5;249\", null, false, false, false] 38-47:[\"38;5;8\", null, false, false, false] 47-49:[\"38;5;249\", null, false, false, false] 49-59:[\"38;5;8\", null, false, false, false] 59-62:[\"38;5;249\", null, false, false, false] 62-67:[\"38;5;8\", null, false, false, false] 101-103:[\"38;5;8\", null, false, false, false]"
+     " ↑↓ move  ⏎ jump  ⇥ scope  ⌦ close  ^r rename  ^o preview  esc quit                                  21  ‖ 1-3:[\"38;5;249\", null, false, false, false] 3-10:[\"38;5;8\", null, false, false, false] 10-11:[\"38;5;249\", null, false, false, false] 11-18:[\"38;5;8\", null, false, false, false] 18-19:[\"38;5;249\", null, false, false, false] 19-27:[\"38;5;8\", null, false, false, false] 27-28:[\"38;5;249\", null, false, false, false] 28-36:[\"38;5;8\", null, false, false, false] 36-38:[\"38;5;249\", null, false, false, false] 38-47:[\"38;5;8\", null, false, false, false] 47-49:[\"38;5;249\", null, false, false, false] 49-59:[\"38;5;8\", null, false, false, false] 59-62:[\"38;5;249\", null, false, false, false] 62-67:[\"38;5;8\", null, false, false, false] 101-103:[\"38;5;8\", null, false, false, false]"
     ]
    },
    {
     "after": "b'\\x1b[Z'",
-    "bytes": 890,
+    "bytes": 1575,
     "screen": [
      " ❯  jump to a tab, pane or agent…    @ agents   % panes   $ shells   ! needs you           ! needs you  ‖ 1-3:[\"38;5;12\", null, true, false, false] 3-4:[null, null, false, false, true] 4-80:[\"38;5;8\", null, false, false, false] 90-103:[\"38;5;12\", null, true, false, false]",
      " ──────────────────────────────────────────────────────────────────────────────────────────────────────  ‖ 1-103:[\"38;5;8\", null, false, false, false]",
@@ -9340,7 +9485,12 @@
   ]
  },
  "bar-tall": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -9568,7 +9718,12 @@
   ]
  },
  "bar-tiny": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -9653,7 +9808,12 @@
   ]
  },
  "bar-type-and-erase": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -10495,7 +10655,12 @@
   ]
  },
  "bar-unicode": {
-  "changes": [],
+  "changes": [
+   [
+    "ping",
+    {}
+   ]
+  ],
   "exit": 0,
   "files": {
    "{watcher}/title-launch.lock": "",
@@ -10926,7 +11091,7 @@
   "frames": [
    {
     "after": "open",
-    "bytes": 63,
+    "bytes": 189,
     "screen": [
      "",
      "",
@@ -10956,7 +11121,7 @@
   "modes": [
    "osc:11;?"
   ],
-  "printed": "herdr-bar: herdr binary not found (set HERDR_BIN_PATH)\r\n",
+  "printed": "herdr-bar: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at /tmp/hbp-XXXXXXXX/herdr.sock; run `herdr` to start or attach it\"}}\r\n",
   "reads": []
  },
  "cli-doctor": {
@@ -10975,7 +11140,7 @@
    "{watcher}/title-watcher.stopped": ""
   },
   "stderr": "",
-  "stdout": "herdr-bar <version>\n<masked>\n<masked>\nherdr bin        herdr\nsocket           <tmp>/herdr.sock\nsocket usable    no, using the CLI\nconfig           <tmp>/config/config.json\nstate            <tmp>/state/recent.json\npreview          auto\nrefresh          900ms\nstdin is a tty   no\nherdr            unreachable: herdr binary not found (set HERDR_BIN_PATH)\n"
+  "stdout": "herdr-bar <version>\n<masked>\n<masked>\nherdr bin        herdr\nsocket           <tmp>/herdr.sock\nsocket usable    no, using the CLI\nconfig           <tmp>/config/config.json\nstate            <tmp>/state/recent.json\npreview          auto\nrefresh          900ms\nstdin is a tty   no\nherdr            unreachable: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at <tmp>/herdr.sock; run `herdr` to start or attach it\"}}\n"
  },
  "cli-h": {
   "changes": [],
@@ -11028,7 +11193,7 @@
   "files": {
    "{watcher}/title-watcher.stopped": ""
   },
-  "stderr": "herdr-bar: herdr binary not found (set HERDR_BIN_PATH)\n",
+  "stderr": "herdr-bar: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at <tmp>/herdr.sock; run `herdr` to start or attach it\"}}\n",
   "stdout": ""
  },
  "cli-no-tty": {

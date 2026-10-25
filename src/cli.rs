@@ -15,7 +15,7 @@ use crate::title_watcher;
 use std::io::Write;
 use std::path::PathBuf;
 
-pub const VERSION: &str = "0.11.0";
+pub const VERSION: &str = "0.12.0";
 
 pub const USAGE: &str = "herdr-bar - jump to any Herdr tab, pane, or agent
 
@@ -224,6 +224,7 @@ pub fn main(args: Vec<String>) -> i32 {
     if config.agent_icons.as_str() == Some("auto") {
         icons::prefetch();
     }
+    crate::commands::prefetch_plugin_actions();
     let fetch_config = config.clone();
     // The answer comes back over a channel so the thread can go on to free
     // the parsed snapshot while the bar draws.
@@ -274,6 +275,11 @@ pub fn main(args: Vec<String>) -> i32 {
     let item = bar.pool[chosen].clone();
     if let Err(error) = jump(&mut bar.client, &item) {
         return fail(&error.message);
+    }
+    if item.command.is_some() {
+        if let Err(message) = crate::commands::run(&item) {
+            return fail(&message);
+        }
     }
     let current_key = bar.current_key.clone();
     let current_title = bar.current_title.clone();

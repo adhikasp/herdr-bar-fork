@@ -16,6 +16,7 @@ pub const KIND_AGENT: &str = "agent";
 pub const KIND_PANE: &str = "pane";
 pub const KIND_TAB: &str = "tab";
 pub const KIND_SPACE: &str = "space";
+pub const KIND_COMMAND: &str = "command";
 
 pub fn status_order(status: &str) -> i64 {
     match status {
@@ -49,6 +50,8 @@ pub struct Item {
     pub fields: Vec<String>,
     pub prepared: Vec<Prepared>,
     pub detail_field: isize,
+    /// Herdr CLI arguments a command row runs; None for every other row.
+    pub command: Option<Vec<String>>,
 }
 
 pub struct ItemInit {
@@ -118,6 +121,7 @@ impl Item {
             fields,
             prepared,
             detail_field,
+            command: None,
         }
     }
 

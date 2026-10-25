@@ -32,6 +32,8 @@ pub struct Config {
     /// Let the next session in a pane take over the task title written for
     /// the one before it.
     pub follow_new_sessions: bool,
+    /// Open in a list mode where j/k move and "/" starts the search.
+    pub modal: bool,
 }
 
 /// Python's `int(value)` for whatever JSON put there; None where it raises.
@@ -101,6 +103,7 @@ impl Config {
                 .unwrap_or("all"),
             select_current: get("select_current").map(|v| v.is_true()).unwrap_or(false),
             follow_new_sessions: get("follow_new_sessions").map(|v| v.is_true()).unwrap_or(false),
+            modal: get("modal").map(|v| v.is_true()).unwrap_or(false),
         }
     }
 
