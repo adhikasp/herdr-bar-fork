@@ -1933,8 +1933,9 @@
     {}
    ],
    [
-    "workspace.focus",
+    "tab.create",
     {
+     "focus": true,
      "workspace_id": "w2"
     }
    ]
@@ -3530,8 +3531,9 @@
     {}
    ],
    [
-    "workspace.focus",
+    "tab.create",
     {
+     "focus": true,
      "workspace_id": "w2"
     }
    ]

@@ -361,11 +361,12 @@ impl HerdrClient {
         .map(|_| ())
     }
 
-    pub fn focus_workspace(&mut self, workspace_id: &str) -> Result<()> {
+    /// A new tab in the workspace, focused (which focuses the workspace too).
+    pub fn create_tab(&mut self, workspace_id: &str) -> Result<()> {
         self.call(
-            "workspace.focus",
-            dict(&[("workspace_id", Value::str(workspace_id))]),
-            &["workspace", "focus", workspace_id],
+            "tab.create",
+            dict(&[("workspace_id", Value::str(workspace_id)), ("focus", Value::Bool(true))]),
+            &["tab", "create", "--workspace", workspace_id, "--focus"],
         )
         .map(|_| ())
     }
@@ -700,7 +701,7 @@ mod tests {
         let requests = serve(&path, ok);
         let mut client = client(&path, "/nonexistent");
         client.focus_tab("w1:t1").unwrap();
-        client.focus_workspace("w1").unwrap();
+        client.create_tab("w1").unwrap();
         client.focus_agent("w1:p1").unwrap();
         client.focus_pane("w1:p2").unwrap();
         let seen: Vec<(Value, Value)> =
@@ -709,7 +710,7 @@ mod tests {
             seen,
             vec![
                 (Value::str("tab.focus"), params(r#"{"tab_id": "w1:t1"}"#)),
-                (Value::str("workspace.focus"), params(r#"{"workspace_id": "w1"}"#)),
+                (Value::str("tab.create"), params(r#"{"workspace_id": "w1", "focus": true}"#)),
                 (Value::str("agent.focus"), params(r#"{"target": "w1:p1"}"#)),
                 (Value::str("pane.focus"), params(r#"{"pane_id": "w1:p2"}"#)),
             ]

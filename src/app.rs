@@ -1275,10 +1275,10 @@ impl Bar {
     }
 }
 
-/// Focus whatever the row points at.
+/// Focus whatever the row points at. A workspace row opens a new tab there.
 pub fn jump(client: &mut HerdrClient, item: &Item) -> Result<()> {
     if item.kind == KIND_SPACE {
-        return client.focus_workspace(&item.workspace_id);
+        return client.create_tab(&item.workspace_id);
     }
     if let Some(tab_id) = item.tab_id.as_deref().filter(|t| !t.is_empty()) {
         client.focus_tab(tab_id)?;
@@ -1498,7 +1498,7 @@ mod tests {
                     }
                 }
             }
-            "workspace.focus" => state.calls.push(vec!["workspace".into(), s(&params, "workspace_id")]),
+            "tab.create" => state.calls.push(vec!["tab.create".into(), s(&params, "workspace_id")]),
             "tab.focus" => state.calls.push(vec!["tab".into(), s(&params, "tab_id")]),
             "agent.focus" => state.calls.push(vec!["agent".into(), s(&params, "target")]),
             "pane.focus" => state.calls.push(vec!["pane".into(), s(&params, "pane_id")]),
@@ -2092,11 +2092,11 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn workspace_rows_focus_the_workspace() {
+    fn workspace_rows_open_a_new_tab_there() {
         let mut t = bar();
         let index = item_index(&t.bar, |i| i.kind == KIND_SPACE);
         let workspace_id = t.bar.pool[index].workspace_id.clone();
-        assert_eq!(jumped(&mut t, index), vec![call(&["workspace", &workspace_id])]);
+        assert_eq!(jumped(&mut t, index), vec![call(&["tab.create", &workspace_id])]);
     }
 
     #[cfg(unix)]

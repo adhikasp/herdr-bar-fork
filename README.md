@@ -297,7 +297,7 @@ Whichever you pick, Cmd+K is likely already taken by the terminal (usually
 
 **What is in the list.** Every agent, every tab that has no agent, and — once a
 session has more than one — every workspace. Selecting an agent focuses its tab
-and its pane; selecting a workspace focuses the workspace.
+and its pane; selecting a workspace opens a new tab in it.
 
 `% panes` switches to one row per named pane. Unnamed panes stay out of the
 list. Named panes also appear in Everything and participate in its searches;
@@ -397,7 +397,7 @@ session in a single `session.snapshot` call over herdr's socket (a Unix
 socket, or the named pipe herdr serves under the same path on Windows),
 re-reads it while it is open so statuses stay live, tails the selected pane with
 `pane.read` for the preview, and calls `tab.focus`, `pane.focus`, `agent.focus`,
-or `workspace.focus` when you press Enter, or `tab.close` when you confirm a
+or `tab.create` when you press Enter, or `tab.close` when you confirm a
 delete. Running times come from `pane.process_info` plus `ps` (the process
 creation time on Windows), one reading per
 pane on the way onto the screen and then ticked locally, because a start time
