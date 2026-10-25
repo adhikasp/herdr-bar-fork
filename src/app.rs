@@ -45,16 +45,68 @@ fn scope_chip(scope: &str) -> &'static str {
     }
 }
 
+/// The kind a leading query word narrows an everything search to, so
+/// "s pilf" is the workspaces matching "pilf". "t" takes every tab-level
+/// row, agents included, since an agent row is its tab.
+fn prefix_kind(word: &str) -> Option<&'static str> {
+    Some(match word {
+        "s" | "w" | "ws" | "space" | "spaces" | "workspace" | "workspaces" => KIND_SPACE,
+        "a" | "agent" | "agents" => KIND_AGENT,
+        "t" | "tab" | "tabs" => KIND_TAB,
+        "p" | "pane" | "panes" => KIND_PANE,
+        "c" | "cmd" | "cmds" | "command" | "commands" | ">" | ":" => KIND_COMMAND,
+        _ => return None,
+    })
+}
+
+/// Split a kind prefix off the query: `Some((kind, rest))` for "s pilf".
+///
+/// The word only counts once a space or a colon follows it, so a lone "s" is
+/// still a search for an s, while "s " and "s:" already list every workspace.
+pub fn kind_prefix(query: &str) -> Option<(&'static str, &str)> {
+    let query = query.trim_start();
+    let word_end = query.find(pystr::is_space);
+    let word = &query[..word_end.unwrap_or(query.len())];
+    if let Some(colon) = word.find(':').filter(|&at| at > 0) {
+        let kind = prefix_kind(&word[..colon].to_ascii_lowercase())?;
+        return Some((kind, query[colon + 1..].trim_start()));
+    }
+    let kind = prefix_kind(&word.to_ascii_lowercase())?;
+    Some((kind, query[word_end?..].trim_start()))
+}
+
+/// What an everything search gives up on a command, so the places you can
+/// jump to come first when a short query fits both.
+pub const COMMAND_PENALTY: i64 = 32;
+/// Terms this short fit nearly anything; from here on, match quality decides
+/// between a place and a command ("reload" should find Reload herdr config).
+pub const SHORT_TERM: usize = 3;
+
+fn prefix_chip(kind: &str) -> &'static str {
+    match kind {
+        KIND_SPACE => "spaces",
+        KIND_AGENT => "agents",
+        KIND_TAB => "tabs",
+        KIND_PANE => "panes",
+        KIND_COMMAND => "commands",
+        _ => "",
+    }
+}
+
+fn of_prefix_kind(kind: &str, item: &Item) -> bool {
+    item.kind == kind || (kind == KIND_TAB && item.kind == KIND_AGENT)
+}
+
 pub const TITLE_BONUS: i64 = 40;
 pub const PREVIEW_DEBOUNCE: f64 = 0.07;
 pub const PREVIEW_TTL: f64 = 1.5;
 pub const ESC_TIMEOUT: f64 = 0.04;
 pub const STATUS_TTL: f64 = 2.5;
 
-pub const PLACEHOLDER: &str = "jump to a tab, pane or agent…    @ agents   % panes   $ shells   ! needs you";
-pub const PLACEHOLDER_SHORT: &str = "jump to a tab, pane or agent…";
-pub const PLACEHOLDER_NORMAL: &str = "j/k move    / search    > commands    @ agents    % panes    $ shells    ! needs you";
-pub const PLACEHOLDER_NORMAL_SHORT: &str = "j/k move · / search · > commands";
+pub const PLACEHOLDER: &str = "search everything…    s space · a agent · t tab · p pane · c command";
+pub const PLACEHOLDER_SHORT: &str = "search everything…";
+pub const PLACEHOLDER_NORMAL: &str = "type to search    s space · a agent · t tab · c command    j/k move";
+pub const PLACEHOLDER_NORMAL_SHORT: &str = "type to search · j/k move";
 
 /// time.monotonic(): seconds on a clock that only moves forward. It starts
 /// far from zero, as Python's does, so "never" (0.0) is long ago.
@@ -160,6 +212,13 @@ impl Pool {
         if !config.wants_workspaces(workspace_count) {
             items.retain(|item| item.kind != KIND_SPACE);
         }
+        for item in items.iter_mut().filter(|item| item.kind == KIND_SPACE) {
+            // The Python release made workspaces findable by these words; the
+            // `s ` prefix does that now, and they made every short query
+            // ("s", "wor", "rs") hit every workspace without a visible match.
+            item.unsearch("space");
+            item.unsearch("workspace");
+        }
         let item_count = items.len();
         items.extend(build_pane_items(snapshot));
         let command_start = items.len();
@@ -180,6 +239,8 @@ pub struct Bar {
     /// With `modal` on: whether keys type a query (true) or navigate (false).
     pub searching: bool,
     plugin_actions_seen: bool,
+    /// The kind prefix the rows were last filtered by (see `rebuild`).
+    prefix_used: Option<&'static str>,
     pub rows: Vec<Row>,
     pub query: String,
     pub cursor: usize,
@@ -227,6 +288,7 @@ impl Bar {
             command_start: 0,
             searching: !modal,
             plugin_actions_seen: false,
+            prefix_used: None,
             rows: Vec::new(),
             query: String::new(),
             cursor: 0,
@@ -333,7 +395,16 @@ impl Bar {
     }
 
     pub fn rebuild(&mut self, keep_key: Option<String>) {
-        self.rows = self.filter();
+        let parsed = self.parsed_prefix();
+        self.rows = self.filter(parsed);
+        self.prefix_used = parsed;
+        let rest = kind_prefix(&self.query).map(|(_, rest)| rest).unwrap_or("");
+        if parsed.is_some() && self.rows.is_empty() && !split_query(rest).is_empty() {
+            // "pane tab" found no pane: the first word was meant as a word,
+            // not a kind, so search everything for all of it instead.
+            self.rows = self.filter(None);
+            self.prefix_used = None;
+        }
         self.reselect(keep_key);
     }
 
@@ -359,15 +430,48 @@ impl Bar {
         }
     }
 
-    fn filter(&self) -> Vec<Row> {
-        let source: Vec<usize> = match self.scope {
-            "pane" => (self.item_count..self.command_start).collect(),
-            "command" => (self.command_start..self.pool.len()).collect(),
-            "all" => (0..self.command_start).collect(),
+    /// The kind prefix the rows were filtered by, if any.
+    pub fn prefix(&self) -> Option<&'static str> {
+        self.prefix_used
+    }
+
+    /// The kind prefix the query names: only an everything search reads one,
+    /// since any other scope has already said which rows it wants.
+    fn parsed_prefix(&self) -> Option<&'static str> {
+        if self.scope != "all" {
+            return None;
+        }
+        kind_prefix(&self.query).map(|(kind, _)| kind)
+    }
+
+    /// The query text left to match once a kind prefix is taken off.
+    fn search_text(&self, prefix: Option<&str>) -> &str {
+        match kind_prefix(&self.query) {
+            Some((_, rest)) if prefix.is_some() => rest,
+            _ => &self.query,
+        }
+    }
+
+    /// The rows this scope, prefix and query can show, before matching.
+    fn candidates(&self, prefix: Option<&str>) -> Vec<usize> {
+        let source: Vec<usize> = match (self.scope, prefix) {
+            ("all", Some(kind)) => {
+                (0..self.pool.len()).filter(|&i| of_prefix_kind(kind, &self.pool[i])).collect()
+            }
+            // Commands join everything once there is something to look for;
+            // at rest the list stays the places you can jump to.
+            ("all", None) if !split_query(&self.query).is_empty() => (0..self.pool.len()).collect(),
+            ("all", None) => (0..self.command_start).collect(),
+            ("pane", _) => (self.item_count..self.command_start).collect(),
+            ("command", _) => (self.command_start..self.pool.len()).collect(),
             _ => (0..self.item_count).collect(),
         };
-        let candidates: Vec<usize> = source.into_iter().filter(|&i| self.in_scope(&self.pool[i])).collect();
-        let terms = split_query(&self.query);
+        source.into_iter().filter(|&i| self.in_scope(&self.pool[i])).collect()
+    }
+
+    fn filter(&self, prefix: Option<&str>) -> Vec<Row> {
+        let candidates = self.candidates(prefix);
+        let terms = split_query(self.search_text(prefix));
         if terms.is_empty() {
             return self
                 .resting_order(&candidates)
@@ -377,6 +481,8 @@ impl Bar {
         }
         let terms: Vec<Term> = terms.iter().map(|t| Term::new(t)).collect();
         let (pool, recents) = (&self.pool, &self.recents);
+        let demote_commands =
+            self.scope == "all" && prefix.is_none() && terms.iter().all(|t| t.needle.len() < SHORT_TERM);
         // Rows score independently, so a big list is scored in chunks (see
         // `par`); each chunk keeps its own memo, which only saves work.
         let mut scored: Vec<((i64, usize, i64, usize), Row)> = crate::par::map_chunks(&candidates, |chunk| {
@@ -384,7 +490,10 @@ impl Bar {
             let mut scored = Vec::new();
             for &index in chunk {
                 let item = &pool[index];
-                let Some((score, by_field)) = score_item(&terms, item, &mut memo) else { continue };
+                let Some((mut score, by_field)) = score_item(&terms, item, &mut memo) else { continue };
+                if demote_commands && item.kind == KIND_COMMAND {
+                    score -= COMMAND_PENALTY;
+                }
                 let rank = recents.rank(&item.key, &item.title).unwrap_or(999);
                 let positions = by_field.get(&0).cloned().unwrap_or_default();
                 scored.push((
@@ -420,6 +529,10 @@ impl Bar {
         recent.sort_by_key(|entry| entry.0);
         rest.sort_by(|&a, &b| {
             let (a, b) = (&self.pool[a], &self.pool[b]);
+            if a.kind == KIND_COMMAND && b.kind == KIND_COMMAND {
+                // Commands keep the palette's own order, grouped by what they act on.
+                return std::cmp::Ordering::Equal;
+            }
             let key = |item: &Item| (item.kind == KIND_SPACE, item.status_rank());
             key(a)
                 .cmp(&key(b))
@@ -475,6 +588,31 @@ impl Bar {
     }
 
     fn cycle_scope(&mut self, step: isize) {
+        // Also when the kind found nothing and the search widened: a filter
+        // replaces the kind word either way.
+        if self.parsed_prefix().is_some() {
+            // A filter replaces the typed kind; keep the words, drop the kind,
+            // so the input never says one thing while the list does another.
+            let rest = kind_prefix(&self.query).map(|(_, rest)| rest.to_string()).unwrap_or_default();
+            self.cursor = char_len(&rest);
+            self.query = rest;
+            // Step on from the filter the kind stands for, so "a pi" then tab
+            // goes to panes, as "@" then tab would.
+            let current = match self.prefix_used {
+                Some(KIND_AGENT) => "agent",
+                Some(KIND_PANE) => "pane",
+                Some(KIND_COMMAND) => "command",
+                _ => "all",
+            };
+            self.prefix_used = None;
+            if current != "all" {
+                let index = SCOPES.iter().position(|s| *s == current).unwrap_or(0) as isize;
+                self.scope = SCOPES[(index + step).rem_euclid(SCOPES.len() as isize) as usize];
+                self.selected = 0;
+                self.rebuild(None);
+                return;
+            }
+        }
         let index = SCOPES.iter().position(|s| *s == self.scope).unwrap_or(0) as isize;
         self.scope = SCOPES[(index + step).rem_euclid(SCOPES.len() as isize) as usize];
         self.selected = 0;
@@ -511,6 +649,12 @@ impl Bar {
                 self.rebuild(None);
                 return;
             }
+            if self.config.modal && self.searching {
+                // An empty search unwinds to the list, never straight to a close.
+                self.searching = false;
+                self.dirty = true;
+                return;
+            }
             // Nothing left to unwind, and this is the key labelled "delete" on
             // a Mac keyboard: offer to close the row instead of doing nothing.
             self.request_close();
@@ -535,34 +679,48 @@ impl Bar {
 
     /// Text typed in the modal list mode: vim-style moves, and the keys that
     /// start a search. True when the text was handled and must not be typed.
+    ///
+    /// Any other character starts the search and is typed into it, so "s
+    /// pilf" works straight from the list. Text arrives in chunks when typed
+    /// fast, so it is read a character at a time until the search takes over.
     fn normal_text(&mut self, text: &str) -> bool {
         if !self.config.modal || self.searching {
             return false;
         }
-        match text {
-            "j" => self.move_by(1, true),
-            "k" => self.move_by(-1, true),
-            "g" => {
-                self.selected = 0;
-                self.dirty = true;
+        for (at, c) in text.char_indices() {
+            if self.searching {
+                self.insert(&text[at..], false);
+                return true;
             }
-            "G" => {
-                self.selected = self.rows.len().saturating_sub(1);
-                self.dirty = true;
+            match c {
+                'j' => self.move_by(1, true),
+                'k' => self.move_by(-1, true),
+                'g' => {
+                    self.selected = 0;
+                    self.dirty = true;
+                }
+                'G' => {
+                    self.selected = self.rows.len().saturating_sub(1);
+                    self.dirty = true;
+                }
+                '/' => {
+                    self.searching = true;
+                    self.dirty = true;
+                }
+                '>' | ':' => {
+                    self.scope = "command";
+                    self.selected = 0;
+                    self.searching = true;
+                    self.rebuild(None);
+                }
+                // The scope sigils filter the list without starting a search.
+                '@' | '%' | '$' | '!' => self.insert(&c.to_string(), false),
+                c if pystr::is_space(c) => {}
+                _ => {
+                    self.searching = true;
+                    self.insert(&c.to_string(), false);
+                }
             }
-            "/" => {
-                self.searching = true;
-                self.dirty = true;
-            }
-            ">" | ":" => {
-                self.scope = "command";
-                self.selected = 0;
-                self.searching = true;
-                self.rebuild(None);
-            }
-            // The scope sigils filter the list without starting a search.
-            "@" | "%" | "$" | "!" => return false,
-            _ => {}
         }
         true
     }
@@ -777,7 +935,7 @@ impl Bar {
 
     /// Whether backspace currently arms a close rather than erasing.
     fn backspace_closes(&self) -> bool {
-        self.query.is_empty() && self.scope == "all"
+        self.query.is_empty() && self.scope == "all" && !(self.config.modal && self.searching)
     }
 
     /// Arm the confirmation for the selected row's tab.
@@ -980,7 +1138,13 @@ impl Bar {
         self.scroll_into_view(layout.list_height);
 
         let mut rows: Vec<String> = Vec::new();
-        let chip = scope_chip(self.scope);
+        let chip = match (self.prefix(), self.parsed_prefix()) {
+            (Some(kind), _) => prefix_chip(kind).to_string(),
+            // The kind word found nothing and the search widened: say so.
+            (None, Some(kind)) => format!("no {} · everything", prefix_chip(kind)),
+            (None, None) => scope_chip(self.scope).to_string(),
+        };
+        let chip = chip.as_str();
         let wide = layout.inner_width >= 62;
         let placeholder = match (self.config.modal && !self.searching, wide) {
             (true, true) => PLACEHOLDER_NORMAL,
@@ -1069,8 +1233,14 @@ impl Bar {
 
     fn list_rows(&mut self, layout: &Layout) -> Vec<String> {
         if self.rows.is_empty() {
-            let filter = if self.scope != "all" { scope_chip(self.scope) } else { "" };
-            let empty = render::render_empty_state(&self.theme, layout.list_width, &self.query, !self.items().is_empty(), filter);
+            let filter = match self.prefix() {
+                Some(kind) => prefix_chip(kind),
+                None if self.scope != "all" => scope_chip(self.scope),
+                None => "",
+            };
+            // "p " with no named panes is an empty filter, not a failed search.
+            let query = if self.prefix().is_some() { self.search_text(self.prefix()) } else { &self.query };
+            let empty = render::render_empty_state(&self.theme, layout.list_width, query, !self.items().is_empty(), filter);
             let top = ((layout.list_height - empty.len() as isize).max(0) / 2) as usize;
             let mut out = vec![String::new(); top];
             out.extend(empty);
@@ -1124,24 +1294,25 @@ impl Bar {
             return render::render_footer(&self.theme, width, hints, &self.rows.len().to_string());
         }
         let close_key = if self.backspace_closes() { "⌫" } else { "⌦" };
-        let mut hints: Vec<(&str, &str)> = vec![
-            ("↑↓", "move"),
-            ("⏎", "jump"),
-            ("⇥", "scope"),
+        // In modal mode esc steps back to the list before it quits.
+        let esc = if self.config.modal { "back" } else { "quit" };
+        // Spaces and commands have no tab to close or rename.
+        let tabless = self.rows.is_empty() || matches!(self.selected_item().kind, KIND_SPACE | KIND_COMMAND);
+        let go = if !self.rows.is_empty() && self.selected_item().kind == KIND_COMMAND { "run" } else { "jump" };
+        let mut hints: Vec<(&str, &str)> = vec![("↑↓", "move"), ("⏎", go), ("⇥", "scope")];
+        if !tabless {
             // Backspace only reaches the close once there is nothing left for
             // it to erase, so the footer names whichever key works right now.
-            (close_key, "close"),
-            ("^r", "rename"),
-            ("^o", "preview"),
-            ("esc", "quit"),
-        ];
+            hints.extend([(close_key, "close"), ("^r", "rename")]);
+        }
+        hints.extend([("^o", "preview"), ("esc", esc)]);
         if width < 52 {
             hints = vec![("↑↓", ""), ("⏎", ""), ("esc", "")];
         }
         let total = match self.scope {
             "pane" => self.pane_items().len(),
             "command" => self.pool.len() - self.command_start,
-            "all" => self.command_start,
+            "all" => self.candidates(self.prefix_used).len(),
             _ => self.items().len(),
         };
         let shown = self.rows.len();
@@ -1226,6 +1397,11 @@ impl Bar {
                 }
                 continue;
             }
+            if !matches!(event, Event::Mouse { .. }) && self.status.is_some() {
+                // A message answers the key before this one; the next key moves on.
+                self.status = None;
+                self.dirty = true;
+            }
             let found = match event {
                 Event::Key(name) => self.handle_key(name),
                 Event::Text(text) => {
@@ -1235,9 +1411,8 @@ impl Bar {
                     None
                 }
                 Event::Paste(text) => {
-                    if self.config.modal && !self.searching {
-                        continue;
-                    }
+                    // A paste is always something to look for.
+                    self.searching = true;
                     self.insert(text, true);
                     None
                 }
@@ -1583,18 +1758,22 @@ mod tests {
     struct T {
         bar: Bar,
         fake: Fake,
+        _vars: testutil::EnvVars,
         _env: std::sync::MutexGuard<'static, ()>,
     }
 
     #[cfg(unix)]
     fn bar_with(snapshot: Value, config: Config, recents: Recents) -> T {
         let env = testutil::env_lock();
+        // Command rows show herdr's key bindings; keep the machine's own out.
+        let mut vars = testutil::EnvVars::new();
+        vars.set("HERDR_CONFIG_PATH", "/nonexistent/herdr-bar-test/config.toml");
         let fake = Fake::new(snapshot);
         let mut client = fake.client();
         let pool = client.snapshot().map(|snapshot| Pool::build(&snapshot, &config));
         let mut bar = Bar::new(client, config, recents, Theme::new(None, None, None));
         bar.bootstrap(pool, Vec::new()).expect("bootstrap");
-        T { bar, fake, _env: env }
+        T { bar, fake, _vars: vars, _env: env }
     }
 
     #[cfg(unix)]
@@ -1873,6 +2052,530 @@ mod tests {
         press(&mut t.bar, &[b"@"]);
         press(&mut t.bar, &[b"\x15"]);
         assert_eq!(t.bar.scope, "all");
+    }
+
+    // -- kind prefixes ----------------------------------------------------------
+
+    #[test]
+    fn a_kind_word_followed_by_a_space_is_a_prefix() {
+        assert_eq!(kind_prefix("s pilf"), Some((KIND_SPACE, "pilf")));
+        assert_eq!(kind_prefix("a codex"), Some((KIND_AGENT, "codex")));
+        assert_eq!(kind_prefix("t logs"), Some((KIND_TAB, "logs")));
+        assert_eq!(kind_prefix("p web"), Some((KIND_PANE, "web")));
+        assert_eq!(kind_prefix("c split"), Some((KIND_COMMAND, "split")));
+    }
+
+    #[test]
+    fn kind_words_have_long_forms() {
+        for word in ["s", "w", "ws", "space", "spaces", "workspace", "workspaces"] {
+            assert_eq!(kind_prefix(&format!("{} x", word)), Some((KIND_SPACE, "x")), "{}", word);
+        }
+        for word in ["cmd", "command", "commands", ">", ":"] {
+            assert_eq!(kind_prefix(&format!("{} x", word)), Some((KIND_COMMAND, "x")), "{}", word);
+        }
+        assert_eq!(kind_prefix("agents x"), Some((KIND_AGENT, "x")));
+    }
+
+    #[test]
+    fn a_lone_kind_word_is_still_a_search() {
+        assert_eq!(kind_prefix("s"), None);
+        assert_eq!(kind_prefix("agent"), None);
+        assert_eq!(kind_prefix(""), None);
+    }
+
+    #[test]
+    fn the_prefix_is_live_as_soon_as_the_space_is_typed() {
+        assert_eq!(kind_prefix("s "), Some((KIND_SPACE, "")));
+        assert_eq!(kind_prefix("  s   pi life "), Some((KIND_SPACE, "pi life ")));
+    }
+
+    #[test]
+    fn words_that_merely_start_with_a_kind_letter_are_not_prefixes() {
+        assert_eq!(kind_prefix("spilf x"), None);
+        assert_eq!(kind_prefix("server logs"), None);
+        assert_eq!(kind_prefix("age x"), None);
+        assert_eq!(kind_prefix("'s' x"), None);
+    }
+
+    #[test]
+    fn a_colon_can_end_the_kind_word() {
+        assert_eq!(kind_prefix("s:pilf"), Some((KIND_SPACE, "pilf")));
+        assert_eq!(kind_prefix("space: pilf"), Some((KIND_SPACE, "pilf")));
+        assert_eq!(kind_prefix("a:"), Some((KIND_AGENT, "")));
+        assert_eq!(kind_prefix("cmd:split pane"), Some((KIND_COMMAND, "split pane")));
+    }
+
+    #[test]
+    fn a_colon_after_anything_else_is_search_text() {
+        assert_eq!(kind_prefix("foo:bar"), None);
+        assert_eq!(kind_prefix(":split"), None);
+        assert_eq!(kind_prefix("feat/retry:queue x"), None);
+    }
+
+    #[test]
+    fn prefixes_ignore_case() {
+        assert_eq!(kind_prefix("S pilf"), Some((KIND_SPACE, "pilf")));
+        assert_eq!(kind_prefix("Agent x"), Some((KIND_AGENT, "x")));
+    }
+
+    /// The fixture session with the erestor workspace called pi-life.
+    #[cfg(unix)]
+    fn pi_life_snapshot() -> Value {
+        let mut snapshot = testutil::snapshot();
+        if let Some(Value::List(spaces)) = snapshot.as_dict_mut().unwrap().get_mut("workspaces") {
+            let erestor = spaces.iter_mut().find(|w| w.get("workspace_id").as_str() == Some("w2")).unwrap();
+            erestor.as_dict_mut().unwrap().insert("label", Value::str("pi-life"));
+        }
+        snapshot
+    }
+
+    #[cfg(unix)]
+    fn pi_life_bar(modal: bool) -> T {
+        bar_with(pi_life_snapshot(), config_of(&[("modal", Value::Bool(modal))]), Recents::new(None))
+    }
+
+    #[cfg(unix)]
+    fn kinds(bar: &Bar) -> Vec<&'static str> {
+        let mut kinds: Vec<&'static str> = bar.rows.iter().map(|row| bar.pool[row.item].kind).collect();
+        kinds.sort_unstable();
+        kinds.dedup();
+        kinds
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn space_prefix_finds_the_workspace_and_lights_up_its_name() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s pilf"]);
+        assert_eq!(kinds(&t.bar), vec![KIND_SPACE]);
+        assert_eq!(titles(&t.bar), vec!["pi-life"]);
+        // "pilf" lands on p, i, l and f of "pi-life"; the "s" lights up nothing.
+        assert_eq!(t.bar.rows[0].positions, vec![0, 1, 3, 5]);
+        assert_eq!(press(&mut t.bar, &[b"\r"]), Some("confirm"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn space_prefix_alone_lists_every_workspace() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s "]);
+        assert_eq!(kinds(&t.bar), vec![KIND_SPACE]);
+        let mut found = titles(&t.bar);
+        found.sort();
+        assert_eq!(found, vec!["pacebeats", "pi-life"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_bare_kind_letter_searches_everything() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s"]);
+        assert!(kinds(&t.bar).len() > 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn agent_prefix_keeps_only_agents() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"a codex"]);
+        assert_eq!(kinds(&t.bar), vec![KIND_AGENT]);
+        assert!(t.bar.rows.iter().all(|row| t.bar.pool[row.item].agent.as_deref() == Some("codex")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn tab_prefix_takes_shells_and_agents_but_not_spaces_panes_or_commands() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"t "]);
+        assert_eq!(kinds(&t.bar), vec![KIND_AGENT, KIND_TAB]);
+        t.bar.set_query("t logs".into(), None);
+        assert_eq!(titles(&t.bar)[0], "logs");
+        assert_eq!(row_item(&t.bar, 0).kind, KIND_TAB);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn pane_prefix_keeps_only_named_panes() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"p logs"]);
+        assert_eq!(kinds(&t.bar), vec![KIND_PANE]);
+        assert_eq!(titles(&t.bar), vec!["server logs"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn command_prefix_keeps_only_commands() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"c split"]);
+        assert_eq!(kinds(&t.bar), vec![KIND_COMMAND]);
+        assert!(titles(&t.bar).iter().all(|title| title.starts_with("Split pane")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn command_prefix_alone_lists_the_palette_in_its_own_order() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"c "]);
+        assert_eq!(kinds(&t.bar), vec![KIND_COMMAND]);
+        assert_eq!(&titles(&t.bar)[..2], &["Split pane right", "Split pane down"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn everything_search_reaches_commands() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"split pane"]);
+        assert_eq!(row_item(&t.bar, 0).kind, KIND_COMMAND);
+        assert!(row_item(&t.bar, 0).title.starts_with("Split pane"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn commands_stay_out_of_the_list_at_rest() {
+        let mut t = bar();
+        assert!(!kinds(&t.bar).contains(&KIND_COMMAND));
+        press(&mut t.bar, &[b"x"]);
+        press(&mut t.bar, &[b"\x7f"]);
+        assert!(!kinds(&t.bar).contains(&KIND_COMMAND));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn places_outrank_commands_on_their_own_name() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"logs"]);
+        assert_eq!(titles(&t.bar)[0], "logs");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn prefix_switches_the_chip_and_counts_its_own_kind() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s "]);
+        assert_eq!(t.bar.prefix(), Some(KIND_SPACE));
+        let footer = t.bar.footer(100);
+        assert!(footer.ends_with("m2\x1b[0m"), "{:?}", footer);
+        press(&mut t.bar, &[b"\x7f"]);
+        assert_eq!(t.bar.prefix(), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_prefix_is_plain_text_inside_another_scope() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"@"]);
+        press(&mut t.bar, &[b"s "]);
+        assert_eq!(t.bar.prefix(), None);
+        assert!(kinds(&t.bar).iter().all(|kind| *kind == KIND_AGENT));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn editing_the_prefix_away_widens_the_search_again() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s pi"]);
+        assert_eq!(kinds(&t.bar), vec![KIND_SPACE]);
+        // Home, then forward-delete the "s" and the space.
+        press(&mut t.bar, &[b"\x01", b"\x04", b"\x04"]);
+        assert_eq!(t.bar.query, "pi");
+        assert!(kinds(&t.bar).len() > 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn colon_prefix_narrows_like_a_space() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s:pilf"]);
+        assert_eq!(t.bar.prefix(), Some(KIND_SPACE));
+        assert_eq!(titles(&t.bar), vec!["pi-life"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_kind_word_that_finds_nothing_searches_everything_instead() {
+        let mut t = bar();
+        // No named pane matches "week": "p" was a word, not a kind.
+        press(&mut t.bar, &[b"p week"]);
+        assert_eq!(t.bar.prefix(), None);
+        assert!(!t.bar.rows.is_empty());
+        assert!(titles(&t.bar).iter().any(|title| title == "Redesign week loading screen"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_kind_word_alone_never_falls_back() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"s "]);
+        assert_eq!(t.bar.prefix(), Some(KIND_SPACE));
+        press(&mut t.bar, &[b"\x15", b"p "]);
+        assert_eq!(t.bar.prefix(), Some(KIND_PANE));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_impossible_prefixed_search_shows_no_matches() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"s zzzqqq"]);
+        assert!(t.bar.rows.is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn places_come_before_commands_on_a_short_query() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"s"]);
+        let first_command = t.bar.rows.iter().position(|row| t.bar.pool[row.item].kind == KIND_COMMAND).unwrap();
+        assert!(first_command > 0, "{:?}", titles(&t.bar));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_full_word_lets_a_command_beat_a_loose_place_match() {
+        let mut t = bar();
+        // "Redesign week loading screen" holds r-e-l-o-a-d too, scattered.
+        press(&mut t.bar, &[b"reload"]);
+        assert_eq!(titles(&t.bar)[0], "Reload herdr config");
+        assert!(titles(&t.bar).contains(&"Redesign week loading screen".to_string()));
+    }
+
+    #[cfg(unix)]
+    fn screen(bar: &mut Bar) -> String {
+        crate::textutil::strip_ansi(&bar.compose(120, 30).join("\n"))
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_widened_search_says_why_in_the_chip() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"p week"]);
+        assert!(screen(&mut t.bar).contains("no panes · everything"));
+        press(&mut t.bar, &[b"\x15", b"p logs"]);
+        let shown = screen(&mut t.bar);
+        assert!(shown.contains("panes") && !shown.contains("everything"), "{}", shown);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_empty_kind_says_nothing_is_in_it() {
+        let mut snapshot = testutil::snapshot();
+        snapshot.as_dict_mut().unwrap().insert("panes", Value::List(Vec::new()));
+        let mut t = bar_with(snapshot, Config::default(), Recents::new(None));
+        press(&mut t.bar, &[b"p "]);
+        assert!(t.bar.rows.is_empty());
+        let shown = screen(&mut t.bar);
+        assert!(shown.contains("nothing in panes"), "{}", shown);
+        assert!(!shown.contains("no matches"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn tab_steps_on_from_the_kind_a_prefix_named() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"a re"]);
+        press(&mut t.bar, &[b"\t"]);
+        assert_eq!(t.bar.scope, "pane");
+        assert_eq!(t.bar.query, "re");
+        press(&mut t.bar, &[b"\x15", b"c new"]);
+        press(&mut t.bar, &[b"\x1b[Z"]);
+        assert_eq!(t.bar.scope, "blocked");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_flashed_message_clears_on_the_next_key() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s pi", DELETE]);
+        assert!(t.bar.status.is_some());
+        press(&mut t.bar, &[b"l"]);
+        assert!(t.bar.status.is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn enter_runs_a_command_and_jumps_to_a_place() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"c zoom"]);
+        assert!(t.bar.footer(120).contains("run"));
+        press(&mut t.bar, &[b"\x15", b"logs"]);
+        assert!(t.bar.footer(120).contains("jump"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_command_prefix_does_not_demote_commands() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"c new"]);
+        assert_eq!(titles(&t.bar)[0], "New tab");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn workspaces_no_longer_match_the_word_workspace() {
+        let t = bar();
+        let space = t.bar.pool.iter().find(|item| item.kind == KIND_SPACE).unwrap();
+        assert!(!space.fields.iter().any(|f| f == "space" || f == "workspace"), "{:?}", space.fields);
+        assert_eq!(space.fields[0], space.title);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn tab_replaces_a_typed_prefix_instead_of_hiding_it() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s pilf"]);
+        press(&mut t.bar, &[b"\t"]);
+        assert_eq!(t.bar.scope, "agent");
+        assert_eq!(t.bar.query, "pilf");
+        assert_eq!(t.bar.cursor, 4);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn spaces_and_commands_do_not_offer_close_or_rename() {
+        let mut t = pi_life_bar(false);
+        press(&mut t.bar, &[b"s "]);
+        let footer = t.bar.footer(120);
+        assert!(!footer.contains("close") && !footer.contains("rename"), "{}", footer);
+        press(&mut t.bar, &[b"\x15", b"a "]);
+        assert!(t.bar.footer(120).contains("close"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn close_and_rename_hints_follow_the_selected_row() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"re"]);
+        let command = index_of(&t.bar, |item| item.kind == KIND_COMMAND);
+        t.bar.selected = command;
+        assert!(!t.bar.footer(120).contains("rename"));
+        let place = index_of(&t.bar, |item| item.kind == KIND_AGENT || item.kind == KIND_TAB);
+        t.bar.selected = place;
+        assert!(t.bar.footer(120).contains("rename"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn tab_drops_a_kind_word_that_widened_the_search_too() {
+        let mut t = bar();
+        press(&mut t.bar, &[b"p week"]);
+        assert_eq!(t.bar.prefix(), None);
+        press(&mut t.bar, &[b"\t"]);
+        assert_eq!(t.bar.query, "week");
+        assert_eq!(t.bar.scope, "agent");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_footer_says_esc_goes_back() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b"x"]);
+        assert!(t.bar.footer(120).contains("back"));
+    }
+
+    // -- modal --------------------------------------------------------------------
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_typing_starts_the_search_straight_from_the_list() {
+        let mut t = pi_life_bar(true);
+        assert!(!t.bar.searching);
+        press(&mut t.bar, &[b"s", b" ", b"p", b"i", b"l", b"f"]);
+        assert!(t.bar.searching);
+        assert_eq!(t.bar.query, "s pilf");
+        assert_eq!(titles(&t.bar), vec!["pi-life"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_typing_in_one_burst_is_read_the_same() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b"s pilf"]);
+        assert_eq!(t.bar.query, "s pilf");
+        assert_eq!(titles(&t.bar), vec!["pi-life"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_j_and_k_still_move_until_a_search_starts() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b"j", b"j"]);
+        assert_eq!(t.bar.selected, 2);
+        press(&mut t.bar, &[b"k"]);
+        assert_eq!(t.bar.selected, 1);
+        assert_eq!(t.bar.query, "");
+        press(&mut t.bar, &[b"jjr"]);
+        assert_eq!(t.bar.query, "r");
+        press(&mut t.bar, &[b"etry jk"]);
+        assert_eq!(t.bar.query, "retry jk");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_slash_searches_for_words_that_start_with_j_or_k() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b"/", b"k"]);
+        assert_eq!(t.bar.query, "k");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_space_on_the_list_does_nothing() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b" "]);
+        assert!(!t.bar.searching);
+        assert_eq!(t.bar.query, "");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_backspace_on_an_empty_search_returns_to_the_list() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b"x"]);
+        press(&mut t.bar, &[b"\x7f"]);
+        assert!(t.bar.searching);
+        press(&mut t.bar, &[b"\x7f"]);
+        assert!(!t.bar.searching);
+        assert!(t.bar.pending_close.is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_escape_leaves_the_search_then_the_bar() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b"s pilf"]);
+        assert_eq!(escape(&mut t.bar), None);
+        assert!(!t.bar.searching);
+        assert_eq!(t.bar.query, "");
+        assert_eq!(escape(&mut t.bar), Some("cancel"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_paste_starts_a_search() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b"\x1b[200~s pilf\x1b[201~"]);
+        assert!(t.bar.searching);
+        assert_eq!(titles(&t.bar), vec!["pi-life"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_sigils_filter_without_starting_a_search() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b"@"]);
+        assert_eq!(t.bar.scope, "agent");
+        assert!(!t.bar.searching);
+        press(&mut t.bar, &[b"j"]);
+        assert_eq!(t.bar.selected, 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn modal_greater_than_opens_the_palette_ready_to_type() {
+        let mut t = pi_life_bar(true);
+        press(&mut t.bar, &[b">split"]);
+        assert_eq!(t.bar.scope, "command");
+        assert_eq!(t.bar.query, "split");
+        assert_eq!(kinds(&t.bar), vec![KIND_COMMAND]);
     }
 
     // -- KeyTest ----------------------------------------------------------------
@@ -2621,8 +3324,8 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn placeholder_appears_only_when_empty() {
-        assert!(draw(110, 20, "").rows[0].contains("jump to a tab"));
-        assert!(!draw(110, 20, "week").rows[0].contains("jump to a tab"));
+        assert!(draw(110, 20, "").rows[0].contains("search everything"));
+        assert!(!draw(110, 20, "week").rows[0].contains("search everything"));
     }
 
     #[cfg(unix)]

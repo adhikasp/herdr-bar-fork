@@ -281,7 +281,9 @@ Whichever you pick, Cmd+K is likely already taken by the terminal (usually
 
 | Key | Does |
 | --- | --- |
-| type | fuzzy search; space separates terms, all of which must match |
+| type | fuzzy search over everything, commands included; space separates terms, all of which must match |
+| `s ` `a ` `t ` `p ` `c ` before a search | narrow it to spaces / agents / tabs / named panes / commands: `s pilf` finds the `pi-life` space |
+| `>` or `:` on an empty query | the command palette: herdr's actions and every plugin action |
 | `↑` `↓`, `ctrl+p` `ctrl+n`, `ctrl+k` `ctrl+j` | move |
 | `enter` | jump to the selected row and close |
 | `esc`, `ctrl+c`, `ctrl+g` | leave, change nothing |
@@ -297,7 +299,32 @@ Whichever you pick, Cmd+K is likely already taken by the terminal (usually
 
 **What is in the list.** Every agent, every tab that has no agent, and — once a
 session has more than one — every workspace. Selecting an agent focuses its tab
-and its pane; selecting a workspace opens a new tab in it.
+and its pane; selecting a workspace opens a new tab in it. Once you type, the
+commands join in too, so `split` or `reload` finds the action; at rest the list
+stays the places you can jump to.
+
+**Kind prefixes.** A first word naming a kind, followed by a space or a colon,
+keeps the search to that kind: `s`, `w`, `ws`, `space` or `workspace` for
+workspaces, `a`/`agent` for agents, `t`/`tab` for tabs (agents included, since
+an agent row is its tab), `p`/`pane` for named panes, and `c`, `cmd`, `command`
+or `>` for commands. `s pilf`, `s:pilf` and `space: pilf` all find the `pi-life`
+space. The chip on the right of the input names the kind while it applies, and
+the prefix word itself never counts as a match. A lone `s` with nothing after it
+is still a search for an s. If the kind has nothing matching the rest, the word
+was a word after all: `pane tab` searches everything for both, and the chip says
+so. `tab` swaps a prefix for the next filter. Prefixes apply in Everything; in
+any other filter the word is ordinary search text.
+
+**Commands rank after places.** When a query fits both, the places you can jump
+to come first; `c ` or `>` puts commands on their own. A command's key binding
+is shown next to it but is not searched.
+
+**Modal mode.** With `"modal": true` the bar opens in a list mode: `j`/`k` move,
+`g`/`G` jump to the top and bottom, `/` starts a search (for words that begin
+with j, k or g), `>` opens the command palette, and any other character starts
+the search with itself, so `s pilf` works straight away. `esc` returns from a
+search to the list and closes the bar from there; `backspace` on an empty search
+returns to the list rather than arming a close.
 
 `% panes` switches to one row per named pane. Unnamed panes stay out of the
 list. Named panes also appear in Everything and participate in its searches;
@@ -372,6 +399,7 @@ Optional. Write `config.json` in the plugin config directory
 | `tab_status` | `false` | opt in to agent logos and status glyphs in tab names; `false` restores labels still owned by the watcher |
 | `running_time` | `true` | per-row running time (`47s`, `2h04m`); `false` hides it and skips the per-pane `process_info`/`ps` reading, so the bar opens faster |
 | `scope` | `"all"` | the filter the bar opens with: `"agent"` (`@ agents`), `"pane"` (`% panes`), `"tab"` (`$ shells`), `"blocked"` (`! needs you`) or `"all"`; `backspace` on an empty query still clears it, and `ctrl+u` returns to it |
+| `modal` | `false` | `true` opens in a list mode where `j`/`k` move and typing anything else starts the search (see [Modal mode](#using-it)) |
 | `select_current` | `false` | `true` opens with the row you are in selected instead of the one you came from; the order stays the same, so that row follows the recently visited ones |
 | `colors` | `{}` | role → `#rrggbb`, an ANSI name (`bright_blue`), or 0-255. Roles: `accent`, `match`, `text`, `muted`, `blocked`, `working`, `done`, `idle`, `unknown`, plus `agent_claude`, `agent_codex`, `agent_pi`, `agent_grok`, `agent_kimi`, `agent_gemini`, `agent_cursor`, `agent_opencode` |
 

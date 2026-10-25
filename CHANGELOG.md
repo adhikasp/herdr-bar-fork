@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.12.0
+
+- Add a command palette: `>` or `:` lists herdr's own actions (split, zoom,
+  close, focus and swap panes, new and close tabs and workspaces, next and
+  previous, reload config) and every plugin action, with their key bindings.
+- Typing searches everything, commands included; at rest the list stays the
+  places you can jump to.
+- Add kind prefixes: `s pilf` (or `s:pilf`) keeps the search to workspaces,
+  and `a`, `t`, `p` and `c` do the same for agents, tabs, named panes and
+  commands. The chip names the kind while it applies; a prefix that matches
+  nothing falls back to searching everything for the whole text.
+- Commands rank after places when a query fits both, and their key bindings
+  are no longer searched. Workspaces no longer match the words "space" and
+  "workspace", which made every short query hit all of them.
+- Add `modal` (default `false`): open in a list mode where `j`/`k` move, `/`
+  and `>` start a search or the palette, and any other character starts the
+  search with itself.
+
 ## 0.11.0
 
 - Add `follow_new_sessions` (default `false`) to let the next Claude or Codex

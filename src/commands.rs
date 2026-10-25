@@ -180,6 +180,14 @@ fn command_item(id: &str, title: &str, category: &str, hint: &str, search: &[Str
     item
 }
 
+/// A command row whose detail is its key binding: shown, but not searched,
+/// since "prefix+v" would make every "p" or "pi" hit half the palette.
+fn bound_command_item(id: &str, title: &str, category: &str, binding: &str, argv: Vec<String>) -> Item {
+    let mut item = command_item(id, title, category, binding, &[], argv);
+    item.unsearch(binding);
+    item
+}
+
 pub fn build_items(snapshot: &Value) -> Vec<Item> {
     let focus = focus_of(snapshot);
     let bindings = key_bindings();
@@ -199,7 +207,7 @@ pub fn build_items(snapshot: &Value) -> Vec<Item> {
             continue;
         }
         let argv = spec.args.iter().map(|a| fill(a)).collect();
-        items.push(command_item(spec.key, spec.title, spec.category, &hint_for(spec.key), &[], argv));
+        items.push(bound_command_item(spec.key, spec.title, spec.category, &hint_for(spec.key), argv));
     }
     let jumps = [
         ("Next tab", "Tab", "next_tab", "tab", &focus.next_tab),
@@ -210,7 +218,7 @@ pub fn build_items(snapshot: &Value) -> Vec<Item> {
     for (title, category, key, noun, target) in jumps {
         if let Some(target) = target {
             let argv = vec![noun.to_string(), "focus".to_string(), target.clone()];
-            items.push(command_item(key, title, category, &hint_for(key), &[], argv));
+            items.push(bound_command_item(key, title, category, &hint_for(key), argv));
         }
     }
     let plugin = PLUGIN_ACTIONS.lock().ok().and_then(|guard| guard.clone()).unwrap_or_default();
@@ -245,4 +253,44 @@ pub fn run(item: &Item) -> Result<(), String> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let message = if stderr.trim().is_empty() { stdout.trim() } else { stderr.trim() };
     Err(format!("{}: {}", item.title, message.lines().next().unwrap_or("failed")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn argv() -> Vec<String> {
+        vec!["pane".into(), "zoom".into()]
+    }
+
+    #[test]
+    fn a_key_binding_is_shown_but_not_searched() {
+        let item = bound_command_item("zoom", "Toggle zoom", "Pane", "prefix+z", argv());
+        assert_eq!(item.detail, "prefix+z");
+        assert!(!item.fields.iter().any(|f| f == "prefix+z"));
+        assert_eq!(item.detail_field, -1);
+        assert_eq!(item.fields.len(), item.prepared.len());
+    }
+
+    #[test]
+    fn a_plugin_description_stays_searchable() {
+        let search = vec!["herdr-bar".to_string(), "Start the tab watcher".to_string()];
+        let item = command_item("herdr-bar.start", "Start titles", "herdr-bar", "Start the tab watcher", &search, argv());
+        assert!(item.fields.iter().any(|f| f == "Start the tab watcher"));
+        assert!(item.detail_field >= 0);
+    }
+
+    #[test]
+    fn commands_fill_in_the_focused_pane() {
+        let snapshot = pyjson::loads(
+            r#"{"focused_pane_id": "w1:p2", "focused_tab_id": "w1:t1", "focused_workspace_id": "w1",
+                "workspaces": [{"workspace_id": "w1"}], "tabs": [{"tab_id": "w1:t1", "workspace_id": "w1"}]}"#,
+        )
+        .unwrap();
+        let items = build_items(&snapshot);
+        let zoom = items.iter().find(|i| i.title == "Toggle zoom").unwrap();
+        assert_eq!(zoom.command.as_ref().unwrap(), &["pane", "zoom", "--pane", "w1:p2", "--toggle"]);
+        // One tab and one workspace: there is nowhere for next or previous to go.
+        assert!(!items.iter().any(|i| i.title == "Next tab" || i.title == "Next workspace"));
+    }
 }

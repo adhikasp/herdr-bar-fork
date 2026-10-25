@@ -8,7 +8,7 @@
 
 use crate::age::format_age;
 use crate::icons;
-use crate::items::{Item, KIND_PANE, KIND_SPACE};
+use crate::items::{Item, KIND_COMMAND, KIND_PANE, KIND_SPACE};
 use crate::pyos;
 use crate::pystr;
 use crate::textutil::{display_width, pad, truncate, truncate_middle, window_positions};
@@ -288,6 +288,8 @@ pub fn render_row(
         meta.push(chunk("muted", "space", &field_marks(item, row, "space", 0)));
     } else if item.kind == KIND_PANE {
         meta.push(chunk("muted", "pane", &field_marks(item, row, "pane", 0)));
+    } else if item.kind == KIND_COMMAND {
+        meta.push(vec![Segment::new("muted", "cmd")]);
     }
 
     let fixed = plain_width(&leading);
@@ -671,8 +673,8 @@ mod tests {
     fn placeholder_appears_only_when_empty() {
         let empty = render_input(&theme(), "", 0, 108, PLACEHOLDER, "everything", PROMPT);
         let typed = render_input(&theme(), "week", 4, 108, PLACEHOLDER, "everything", PROMPT);
-        assert!(empty.contains("jump to a tab"));
-        assert!(!typed.contains("jump to a tab"));
+        assert!(empty.contains("search everything"));
+        assert!(!typed.contains("search everything"));
     }
 
     #[test]

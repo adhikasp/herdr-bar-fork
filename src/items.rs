@@ -125,6 +125,18 @@ impl Item {
         }
     }
 
+    /// Stop matching a field (never the title) while the row still shows it.
+    pub fn unsearch(&mut self, text: &str) {
+        let Some(at) = self.fields.iter().skip(1).position(|f| f == text).map(|at| at + 1) else { return };
+        self.fields.remove(at);
+        self.prepared.remove(at);
+        if self.detail_field == at as isize {
+            self.detail_field = -1;
+        } else if self.detail_field > at as isize {
+            self.detail_field -= 1;
+        }
+    }
+
     pub fn status_rank(&self) -> i64 {
         status_order(&self.status)
     }
@@ -571,6 +583,36 @@ pub fn build_pane_items(snapshot: &Value) -> Vec<Item> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn unsearch_keeps_the_title_and_the_detail_index_in_step() {
+        let mut item = Item::new(ItemInit {
+            kind: KIND_SPACE,
+            key: "w1".into(),
+            title: "space".into(),
+            detail: "shown".into(),
+            subtitle: String::new(),
+            workspace_id: "w1".into(),
+            workspace_label: String::new(),
+            tab_id: None,
+            pane_id: None,
+            agent: None,
+            agent_name: None,
+            status: "idle".into(),
+            tab_number: None,
+            focused: false,
+            extra_terms: vec!["workspace".into()],
+        });
+        // "space" is the title here, so it stays.
+        item.unsearch("space");
+        assert_eq!(item.fields[0], "space");
+        item.unsearch("workspace");
+        assert_eq!(item.fields, vec!["space", "shown", "idle"]);
+        assert_eq!(item.fields[item.detail_field as usize], "shown");
+        item.unsearch("shown");
+        assert_eq!(item.detail_field, -1);
+        assert_eq!(item.fields.len(), item.prepared.len());
+    }
+
     // Ported from the Python release's tests/test_items.py.
     use super::*;
     use crate::testutil;
