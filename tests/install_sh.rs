@@ -78,7 +78,7 @@ impl Setup {
             return None;
         };
         let n = COUNTER.fetch_add(1, Ordering::Relaxed);
-        let tmp = std::env::temp_dir().join(format!("herdr-bar-install-{}-{}", std::process::id(), n));
+        let tmp = std::env::temp_dir().join(format!("herdr-command-plugin-install-{}-{}", std::process::id(), n));
         let _ = fs::remove_dir_all(&tmp);
         let plugin = tmp.join("plugin");
         let release = tmp.join("release");
@@ -120,7 +120,7 @@ impl Setup {
             .env("PATH", &self.path_dir)
             .env("HOME", &self.tmp)
             .env("TMPDIR", &self.tmp)
-            .env("HERDR_BAR_DOWNLOAD_BASE", base)
+            .env("HERDR_COMMAND_PLUGIN_DOWNLOAD_BASE", base)
             .stdin(Stdio::null())
             .output()
             .unwrap();
@@ -128,7 +128,7 @@ impl Setup {
     }
 
     fn target(&self) -> PathBuf {
-        self.plugin.join("bin/herdr-bar")
+        self.plugin.join("bin/herdr-command-plugin")
     }
 
     fn assert_clean_bin(&self) {
@@ -137,7 +137,7 @@ impl Setup {
                 entries.filter_map(|e| e.ok()).map(|e| e.file_name().to_string_lossy().into_owned()).collect()
             })
             .unwrap_or_default();
-        let leftovers: Vec<&String> = leftovers.iter().filter(|n| *n != "herdr-bar").collect();
+        let leftovers: Vec<&String> = leftovers.iter().filter(|n| *n != "herdr-command-plugin").collect();
         assert!(leftovers.is_empty(), "left in bin/: {leftovers:?}");
     }
 }
@@ -145,7 +145,7 @@ impl Setup {
 #[test]
 fn good_asset_installs() {
     let Some(s) = Setup::new() else { return };
-    s.publish(&format!("herdr-bar {}", s.version), None, true);
+    s.publish(&format!("herdr-command-plugin {}", s.version), None, true);
     let (ok, stderr) = s.run_install(None);
     assert!(ok, "{stderr}");
     assert!(stderr.contains("installed"), "{stderr}");
@@ -157,7 +157,7 @@ fn good_asset_installs() {
 #[test]
 fn checksum_mismatch_fails() {
     let Some(s) = Setup::new() else { return };
-    s.publish(&format!("herdr-bar {}", s.version), Some(&"0".repeat(64)), true);
+    s.publish(&format!("herdr-command-plugin {}", s.version), Some(&"0".repeat(64)), true);
     let (ok, stderr) = s.run_install(None);
     assert!(!ok);
     assert!(stderr.contains("checksum mismatch"), "{stderr}");
@@ -168,21 +168,21 @@ fn checksum_mismatch_fails() {
 #[test]
 fn missing_asset_fails() {
     let Some(s) = Setup::new() else { return };
-    s.publish(&format!("herdr-bar {}", s.version), None, false);
+    s.publish(&format!("herdr-command-plugin {}", s.version), None, false);
     let (ok, stderr) = s.run_install(None);
     assert!(!ok);
     assert!(stderr.contains("download failed"), "{stderr}");
-    assert!(stderr.contains("herdr plugin install adhikasp/herdr-bar"), "{stderr}");
+    assert!(stderr.contains("herdr plugin install adhikasp/herdr-command-plugin"), "{stderr}");
     assert!(!s.target().exists());
 }
 
 #[test]
 fn wrong_version_fails() {
     let Some(s) = Setup::new() else { return };
-    s.publish("herdr-bar 0.0.0", None, true);
+    s.publish("herdr-command-plugin 0.0.0", None, true);
     let (ok, stderr) = s.run_install(None);
     assert!(!ok);
-    assert!(stderr.contains("reports 'herdr-bar 0.0.0'"), "{stderr}");
+    assert!(stderr.contains("reports 'herdr-command-plugin 0.0.0'"), "{stderr}");
     assert!(!s.target().exists());
     s.assert_clean_bin();
 }
@@ -193,5 +193,5 @@ fn http_base_warns() {
     // Nothing listens on port 9; only the warning matters.
     let (ok, stderr) = s.run_install(Some("http://127.0.0.1:9"));
     assert!(!ok);
-    assert!(stderr.contains("warning: HERDR_BAR_DOWNLOAD_BASE is not https"), "{stderr}");
+    assert!(stderr.contains("warning: HERDR_COMMAND_PLUGIN_DOWNLOAD_BASE is not https"), "{stderr}");
 }

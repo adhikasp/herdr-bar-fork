@@ -224,7 +224,7 @@ pub fn build_items(snapshot: &Value) -> Vec<Item> {
     let plugin = PLUGIN_ACTIONS.lock().ok().and_then(|guard| guard.clone()).unwrap_or_default();
     for action in plugin {
         // The bar's own entry would just reopen the bar inside itself.
-        if action.plugin_id == "herdr-bar" && action.action_id == "open" {
+        if action.plugin_id == "herdr-command-plugin" && action.action_id == "open" {
             continue;
         }
         let id = format!("{}.{}", action.plugin_id, action.action_id);
@@ -274,8 +274,8 @@ mod tests {
 
     #[test]
     fn a_plugin_description_stays_searchable() {
-        let search = vec!["herdr-bar".to_string(), "Start the tab watcher".to_string()];
-        let item = command_item("herdr-bar.start", "Start titles", "herdr-bar", "Start the tab watcher", &search, argv());
+        let search = vec!["herdr-command-plugin".to_string(), "Start the tab watcher".to_string()];
+        let item = command_item("herdr-command-plugin.start", "Start titles", "herdr-command-plugin", "Start the tab watcher", &search, argv());
         assert!(item.fields.iter().any(|f| f == "Start the tab watcher"));
         assert!(item.detail_field >= 0);
     }

@@ -11077,7 +11077,7 @@
   "frames": [
    {
     "after": "open",
-    "bytes": 189,
+    "bytes": 200,
     "screen": [
      "",
      "",
@@ -11107,7 +11107,7 @@
   "modes": [
    "osc:11;?"
   ],
-  "printed": "herdr-bar: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at /tmp/hbp-XXXXXXXX/herdr.sock; run `herdr` to start or attach it\"}}\r\n",
+  "printed": "herdr-command-plugin: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at /tmp/hbp-XXXXXXXX/herdr.sock; run `herdr` to start or attach it\"}}\r\n",
   "reads": []
  },
  "cli-doctor": {
@@ -11117,7 +11117,7 @@
    "{watcher}/title-watcher.stopped": ""
   },
   "stderr": "",
-  "stdout": "herdr-bar <version>\n<masked>\n<masked>\nherdr bin        herdr\nsocket           <tmp>/herdr.sock\nsocket usable    yes\nconfig           <tmp>/config/config.json\nstate            <tmp>/state/recent.json\npreview          auto\nrefresh          900ms\nstdin is a tty   no\nherdr            0.7.5\nrows             10 (2 workspaces, 8 tabs, 6 agents)\n"
+  "stdout": "herdr-command-plugin <version>\n<masked>\n<masked>\nherdr bin        herdr\nsocket           <tmp>/herdr.sock\nsocket usable    yes\nconfig           <tmp>/config/config.json\nstate            <tmp>/state/recent.json\npreview          auto\nrefresh          900ms\nstdin is a tty   no\nherdr            0.7.5\nrows             10 (2 workspaces, 8 tabs, 6 agents)\n"
  },
  "cli-doctor-unreachable": {
   "changes": [],
@@ -11126,7 +11126,7 @@
    "{watcher}/title-watcher.stopped": ""
   },
   "stderr": "",
-  "stdout": "herdr-bar <version>\n<masked>\n<masked>\nherdr bin        herdr\nsocket           <tmp>/herdr.sock\nsocket usable    no, using the CLI\nconfig           <tmp>/config/config.json\nstate            <tmp>/state/recent.json\npreview          auto\nrefresh          900ms\nstdin is a tty   no\nherdr            unreachable: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at <tmp>/herdr.sock; run `herdr` to start or attach it\"}}\n"
+  "stdout": "herdr-command-plugin <version>\n<masked>\n<masked>\nherdr bin        herdr\nsocket           <tmp>/herdr.sock\nsocket usable    no, using the CLI\nconfig           <tmp>/config/config.json\nstate            <tmp>/state/recent.json\npreview          auto\nrefresh          900ms\nstdin is a tty   no\nherdr            unreachable: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at <tmp>/herdr.sock; run `herdr` to start or attach it\"}}\n"
  },
  "cli-h": {
   "changes": [],
@@ -11135,7 +11135,7 @@
    "{watcher}/title-watcher.stopped": ""
   },
   "stderr": "",
-  "stdout": "herdr-bar - jump to any Herdr tab, pane, or agent\n\nusage: run.py [options]\n\noptions:\n  --open      open the bar popup through the Herdr CLI\n  --list      print the rows the bar would show, as JSON\n  --doctor    print environment diagnostics\n  --version   print the plugin version\n  --help      show this message\n\nNormally Herdr launches this itself:\n  herdr plugin action invoke herdr-bar.open\n"
+  "stdout": "herdr-command-plugin - jump to any Herdr tab, pane, or agent\n\nusage: run.py [options]\n\noptions:\n  --open      open the bar popup through the Herdr CLI\n  --list      print the rows the bar would show, as JSON\n  --doctor    print environment diagnostics\n  --version   print the plugin version\n  --help      show this message\n\nNormally Herdr launches this itself:\n  herdr plugin action invoke herdr-command-plugin.open\n"
  },
  "cli-help": {
   "changes": [],
@@ -11144,7 +11144,7 @@
    "{watcher}/title-watcher.stopped": ""
   },
   "stderr": "",
-  "stdout": "herdr-bar - jump to any Herdr tab, pane, or agent\n\nusage: run.py [options]\n\noptions:\n  --open      open the bar popup through the Herdr CLI\n  --list      print the rows the bar would show, as JSON\n  --doctor    print environment diagnostics\n  --version   print the plugin version\n  --help      show this message\n\nNormally Herdr launches this itself:\n  herdr plugin action invoke herdr-bar.open\n"
+  "stdout": "herdr-command-plugin - jump to any Herdr tab, pane, or agent\n\nusage: run.py [options]\n\noptions:\n  --open      open the bar popup through the Herdr CLI\n  --list      print the rows the bar would show, as JSON\n  --doctor    print environment diagnostics\n  --version   print the plugin version\n  --help      show this message\n\nNormally Herdr launches this itself:\n  herdr plugin action invoke herdr-command-plugin.open\n"
  },
  "cli-list": {
   "changes": [],
@@ -11179,7 +11179,7 @@
   "files": {
    "{watcher}/title-watcher.stopped": ""
   },
-  "stderr": "herdr-bar: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at <tmp>/herdr.sock; run `herdr` to start or attach it\"}}\n",
+  "stderr": "herdr-command-plugin: {\"id\":\"cli:api:snapshot\",\"error\":{\"code\":\"server_not_running\",\"message\":\"no herdr server is running at <tmp>/herdr.sock; run `herdr` to start or attach it\"}}\n",
   "stdout": ""
  },
  "cli-no-tty": {
@@ -11188,7 +11188,7 @@
   "files": {
    "{watcher}/title-watcher.stopped": ""
   },
-  "stderr": "herdr-bar: needs a terminal; run it from Herdr with `plugin pane open`\n",
+  "stderr": "herdr-command-plugin: needs a terminal; run it from Herdr with `plugin pane open`\n",
   "stdout": ""
  },
  "cli-stop-titles": {
@@ -11207,7 +11207,7 @@
    "{watcher}/title-watcher.stopped": ""
   },
   "stderr": "",
-  "stdout": "herdr-bar <version>\n"
+  "stdout": "herdr-command-plugin <version>\n"
  },
  "watch-both": {
   "changes": [
@@ -11453,7 +11453,7 @@
   "exited_alone": true,
   "files": {
    "{watcher}/title-watcher.lock": "",
-   "{watcher}/title-watcher.log": "herdr-bar: automatic tab updates disabled: enabled naming plugin(s): someone.tab-namer\n",
+   "{watcher}/title-watcher.log": "herdr-command-plugin: automatic tab updates disabled: enabled naming plugin(s): someone.tab-namer\n",
    "{watcher}/title-watcher.stopped": ""
   },
   "labels": [

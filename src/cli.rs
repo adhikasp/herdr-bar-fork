@@ -15,9 +15,9 @@ use crate::title_watcher;
 use std::io::Write;
 use std::path::PathBuf;
 
-pub const VERSION: &str = "0.12.0";
+pub const VERSION: &str = "0.13.0";
 
-pub const USAGE: &str = "herdr-bar - jump to any Herdr tab, pane, or agent
+pub const USAGE: &str = "herdr-command-plugin - jump to any Herdr tab, pane, or agent
 
 usage: run.py [options]
 
@@ -29,7 +29,7 @@ options:
   --help      show this message
 
 Normally Herdr launches this itself:
-  herdr plugin action invoke herdr-bar.open
+  herdr plugin action invoke herdr-command-plugin.open
 ";
 
 fn out(text: &str) {
@@ -51,7 +51,7 @@ pub fn state_path() -> Option<PathBuf> {
 }
 
 fn fail(message: &str) -> i32 {
-    eprintln!("herdr-bar: {}", message);
+    eprintln!("herdr-command-plugin: {}", message);
     2
 }
 
@@ -80,7 +80,7 @@ fn count(value: &Value) -> usize {
 
 fn doctor(client: &mut HerdrClient, config: &Config) -> i32 {
     let mut lines = vec![
-        format!("herdr-bar {}", VERSION),
+        format!("herdr-command-plugin {}", VERSION),
         format!(
             "binary           {}",
             std::env::current_exe().map(|p| p.to_string_lossy().into_owned()).unwrap_or_else(|_| "?".into())
@@ -166,7 +166,7 @@ pub fn main(args: Vec<String>) -> i32 {
         return 0;
     }
     if has("--version") {
-        out(&format!("herdr-bar {}\n", VERSION));
+        out(&format!("herdr-command-plugin {}\n", VERSION));
         return 0;
     }
     if has("--open") {
@@ -176,7 +176,7 @@ pub fn main(args: Vec<String>) -> i32 {
     if has("--start-titles") || has("--watch-titles") || has("--stop-titles") {
         if args[0] == "--watch-titles" {
             let Some(token) = args.get(1) else {
-                eprintln!("herdr-bar: --watch-titles needs a descriptor or -");
+                eprintln!("herdr-command-plugin: --watch-titles needs a descriptor or -");
                 return 1;
             };
             if token == title_watcher::LOCK_BY_NAME {
@@ -185,14 +185,14 @@ pub fn main(args: Vec<String>) -> i32 {
             return match crate::pystr::parse_int(token) {
                 Some(fd) => title_watcher::watch(Some(fd as i64)),
                 None => {
-                    eprintln!("herdr-bar: invalid literal for int() with base 10: {}", crate::pyjson::str_repr(token));
+                    eprintln!("herdr-command-plugin: invalid literal for int() with base 10: {}", crate::pyjson::str_repr(token));
                     1
                 }
             };
         }
         if args[0] == "--stop-titles" {
             if let Err(message) = title_watcher::stop() {
-                eprintln!("herdr-bar: {}", message);
+                eprintln!("herdr-command-plugin: {}", message);
                 return 1;
             }
         } else {

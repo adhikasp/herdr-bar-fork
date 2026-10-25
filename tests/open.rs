@@ -7,16 +7,16 @@ use std::process::{Command, Stdio};
 
 #[test]
 fn missing_herdr_is_reported_not_raised() {
-    let output = Command::new(env!("CARGO_BIN_EXE_herdr-bar"))
+    let output = Command::new(env!("CARGO_BIN_EXE_herdr-command-plugin"))
         .arg("--open")
         .env_clear()
         .env("PATH", "/nonexistent")
         .env("HERDR_BIN_PATH", "/nonexistent/herdr")
         .stdin(Stdio::null())
         .output()
-        .expect("run herdr-bar --open");
+        .expect("run herdr-command-plugin --open");
     assert_eq!(output.status.code(), Some(2));
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("herdr-bar: could not run herdr:"), "{}", stderr);
+    assert!(stderr.contains("herdr-command-plugin: could not run herdr:"), "{}", stderr);
     assert!(output.stdout.is_empty());
 }

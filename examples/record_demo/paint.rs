@@ -47,23 +47,30 @@ const BASE16: [Rgb; 16] = [
     [238, 241, 247],
 ];
 
-const FONT_DIRS: [&str; 4] = [
+const FONT_DIRS: [&str; 7] = [
     "~/Library/Fonts",
     "/Library/Fonts",
     "/System/Library/Fonts",
     "/usr/share/fonts/truetype",
+    "/usr/share/fonts/TTF",
+    "~/.local/share/fonts",
+    "/usr/share/fonts/Adwaita",
 ];
-const FONT_CANDIDATES: [(&str, &str); 5] = [
+const FONT_CANDIDATES: [(&str, &str); 6] = [
     ("IosevkaTerm-Extended.ttf", "IosevkaTerm-ExtendedBold.ttf"),
     ("JetBrainsMono-Regular.ttf", "JetBrainsMono-Bold.ttf"),
+    // Linux: Adwaita Mono has the status glyphs (◐ ◉ ●) that Nerd Font builds lack.
+    ("AdwaitaMono-Regular.ttf", "AdwaitaMono-Bold.ttf"),
     ("FiraCode-Regular.ttf", "FiraCode-Bold.ttf"),
     ("DejaVuSansMono.ttf", "DejaVuSansMono-Bold.ttf"),
     ("Menlo.ttc", "Menlo.ttc"),
 ];
-const UI_FONTS: [&str; 3] = [
+const UI_FONTS: [&str; 5] = [
     "/System/Library/Fonts/SFNSDisplay.ttf",
     "/System/Library/Fonts/Helvetica.ttc",
     "/Library/Fonts/Arial.ttf",
+    "/usr/share/fonts/Adwaita/AdwaitaSans-Regular.ttf",
+    "/usr/share/fonts/noto/NotoSans-Regular.ttf",
 ];
 
 /// The agent logos live in the icon font's private-use block.

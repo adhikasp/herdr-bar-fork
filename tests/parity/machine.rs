@@ -64,7 +64,7 @@ fn fake_tools(directory: &Path, machine: &Value) -> PathBuf {
 pub struct Machine {
     pub tmp: PathBuf,
     pub socket_path: PathBuf,
-    /// The herdr-bar root that the fake Herdr lists.
+    /// The herdr-command-plugin root that the fake Herdr lists.
     pub plugin_root: PathBuf,
     state_dir: PathBuf,
     env: Vec<(String, String)>,
@@ -142,7 +142,7 @@ impl Machine {
     }
 
     pub fn command(&self, args: &[String]) -> Command {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_herdr-bar"));
+        let mut command = Command::new(env!("CARGO_BIN_EXE_herdr-command-plugin"));
         command.args(args).env_clear().envs(self.env.iter().map(|(k, v)| (k, v))).current_dir(ROOT);
         command
     }
@@ -182,24 +182,24 @@ impl Machine {
 }
 
 /// A plugin root laid out as an install: the manifest, and this build at
-/// `bin/herdr-bar`, both linked. The watcher stats the binary in its root to
+/// `bin/herdr-command-plugin`, both linked. The watcher stats the binary in its root to
 /// notice upgrades, and the checkout has none unless the build step ran.
 /// (parity.py's Python watcher found `run.py` in the checkout instead.)
 fn linked_root(directory: &Path) -> PathBuf {
     let root = directory.join("plugin");
     std::fs::create_dir_all(root.join("bin")).unwrap();
     std::os::unix::fs::symlink(Path::new(ROOT).join("herdr-plugin.toml"), root.join("herdr-plugin.toml")).unwrap();
-    std::os::unix::fs::symlink(env!("CARGO_BIN_EXE_herdr-bar"), root.join("bin").join("herdr-bar")).unwrap();
+    std::os::unix::fs::symlink(env!("CARGO_BIN_EXE_herdr-command-plugin"), root.join("bin").join("herdr-command-plugin")).unwrap();
     std::fs::canonicalize(&root).unwrap()
 }
 
-/// parity.py named its own root as the herdr-bar plugin's; so does this run.
+/// parity.py named its own root as the herdr-command-plugin plugin's; so does this run.
 fn with_local_root(plugins: &Value, root: &Path) -> Value {
     let mut plugins = plugins.clone();
     if let Value::List(entries) = &mut plugins {
         for entry in entries.iter_mut() {
             if let Some(entry) = entry.as_dict_mut() {
-                if entry.get("plugin_id").and_then(Value::as_str) == Some("herdr-bar") && entry.contains_key("plugin_root") {
+                if entry.get("plugin_id").and_then(Value::as_str) == Some("herdr-command-plugin") && entry.contains_key("plugin_root") {
                     entry.insert("plugin_root", Value::str(root.to_str().unwrap()));
                 }
             }
@@ -259,7 +259,7 @@ impl Session {
                 Ok(())
             });
         }
-        let child = command.spawn().expect("spawn herdr-bar");
+        let child = command.spawn().expect("spawn herdr-command-plugin");
         drop(command);
         drop(slave);
         Session { master, child, status: None, output: Vec::new(), answered: 0 }

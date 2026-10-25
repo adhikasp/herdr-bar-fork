@@ -1,4 +1,4 @@
-//! herdr-bar: a Cmd+K style bar for jumping between Herdr tabs, panes, and agents.
+//! herdr-command-plugin: a Cmd+K style bar for jumping between Herdr tabs, panes, and agents.
 
 mod age;
 mod app;

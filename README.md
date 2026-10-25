@@ -1,14 +1,26 @@
-# herdr-bar — auto tab titles, agent icons & Cmd+K search
+# herdr-command-plugin — Cmd+K for Herdr: jump anywhere, run anything
 
-[![ci](https://github.com/jeffarese/herdr-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/jeffarese/herdr-bar/actions/workflows/ci.yml)
+[![ci](https://github.com/adhikasp/herdr-command-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/adhikasp/herdr-command-plugin/actions/workflows/ci.yml)
 
-**A [Herdr](https://herdr.dev) plugin for automatic tab titles, recognizable
-agent icons, and fast session switching.** Press Cmd+K, type a few letters of a
-task, tab, pane, agent, repo or branch, and Enter takes you there. Like the Slack
-quick switcher, for the terminal.
+**A [Herdr](https://herdr.dev) command bar.** Press Cmd+K and type: spaces,
+tabs, agents, named panes and commands are one fuzzy list. A short prefix
+narrows it (`s pilf` is the `pi-life` space, `c split` the split commands), and
+Enter jumps there or runs it. Like Raycast or the Slack quick switcher, for the
+terminal.
 
-![Herdr command bar with auto tab titles, Claude and Codex agent icons, and fuzzy search](assets/demo.gif)
+![Herdr command bar: fuzzy search across spaces, agents and commands, kind prefixes, and the command palette](assets/demo.gif)
 
+- **one search for everything** — spaces, tabs, agents, named panes and
+  commands in one list. At rest it shows the places you can jump to; once you
+  type, commands join in, ranked after places for one- and two-letter queries.
+- **kind prefixes** — `s`, `a`, `t`, `p` and `c` (or `space:`, `agent:`, `cmd:`)
+  keep the search to spaces, agents, tabs, panes or commands, and the chip says
+  which. A prefix that matches nothing widens back to everything.
+- **command palette** — `>` or `c ` lists herdr's own actions (split, zoom,
+  close, focus, new tab or workspace, reload config) and every plugin action,
+  with the key bound to each.
+- **modal mode** — optional vim-style list: `j`/`k` move, and typing anything
+  else starts the search.
 - **automatic titles for unnamed tabs** — follows Claude and Codex task titles to
   replace default tab numbers with the task title. Existing tab names, named
   panes and named agents stay yours, including names set by another plugin.
@@ -18,9 +30,6 @@ quick switcher, for the terminal.
   font installed, vendor logos lead each agent row, as shown in the demo.
 - **optional status in the tab bar** — agent tabs lead with their logo and status,
   updated only when the status changes.
-- **fuzzy search over everything you can jump to** — agents, plain tabs, and
-  workspaces, matched on title, working directory, agent name and kind, branch,
-  workspace, and tab number.
 - **live status, herdr's own language** — `◉` needs you, `◐` working,
   `●` done, `✓` idle. Colors and glyphs mirror the herdr sidebar, and the list
   keeps updating while it is open.
@@ -44,7 +53,7 @@ quick switcher, for the terminal.
 ## Install
 
 ```bash
-herdr plugin install jeffarese/herdr-bar
+herdr plugin install adhikasp/herdr-command-plugin
 ```
 
 Then bind a key (herdr does not add keybindings for you). In your herdr
@@ -54,7 +63,7 @@ Then bind a key (herdr does not add keybindings for you). In your herdr
 [[keys.command]]
 key = "prefix+k"
 type = "plugin_action"
-command = "herdr-bar.open"
+command = "herdr-command-plugin.open"
 description = "command bar"
 ```
 
@@ -65,12 +74,12 @@ Linux or Windows, x86_64 or ARM. Herdr refuses to install the plugin on anything
 older, so there is nothing to get wrong. Installing runs the plugin's build
 step, which downloads the release binary for your platform and checks it
 against the release's `SHA256SUMS`; if that fails, it builds from source with
-`cargo` instead (Rust 1.88+). Set `HERDR_BAR_BUILD=source` to always build from source.
+`cargo` instead (Rust 1.88+). Set `HERDR_COMMAND_PLUGIN_BUILD=source` to always build from source.
 
 **Upgrading from 0.8 or older.** The old Python title watcher keeps running
 after the upgrade, and tab titles stop updating. Run
-`herdr plugin action invoke herdr-bar.stop-titles`, then
-`herdr plugin action invoke herdr-bar.start-titles`, once. Restarting herdr is
+`herdr plugin action invoke herdr-command-plugin.stop-titles`, then
+`herdr plugin action invoke herdr-command-plugin.start-titles`, once. Restarting herdr is
 not enough, because the old watcher survives a server restart.
 
 **Windows.** The build step runs in Windows PowerShell. Everything works on
@@ -92,14 +101,14 @@ switches in your [config](#configuring) control the two features:
 
 Set `"auto_titles": false` to opt out of task naming, or `"tab_status": true`
 to enable status prefixes. An explicit `false` is preserved across upgrades.
-Open the bar or run `herdr plugin action invoke herdr-bar.start-titles` to start
+Open the bar or run `herdr plugin action invoke herdr-command-plugin.start-titles` to start
 the watcher in an already running server. A running watcher reloads
 these settings every two seconds; disabling both restores status prefixes it
 still owns and exits. Task titles already written are kept. The command bar,
 search, agent icons and manual `ctrl+r` renaming work with both features off.
 
 **Other naming plugins take priority.** If another enabled renaming plugin is
-recognized, herdr-bar skips all automatic tab changes even when these switches
+recognized, herdr-command-plugin skips all automatic tab changes even when these switches
 are on. It checks the plugin registry before the first update and before each
 write, including cleanup, and exits without restoring old prefixes when another
 naming plugin is present. Manual `ctrl+r` renames remain available.
@@ -112,7 +121,7 @@ custom plugins with unrelated metadata must be listed by ID in
 updates. After disabling a competing plugin, open the bar or start the watcher
 again to resume the enabled features.
 
-As a fallback for unrecognized writers, herdr-bar also yields a tab after a user
+As a fallback for unrecognized writers, herdr-command-plugin also yields a tab after a user
 or another plugin changes a label it wrote. That decision survives watcher restarts and lasts until the tab closes;
 clearing the name does not reclaim it. Stopping or disabling the watcher never
 strips a prefix from a label it has detected as belonging to another writer.
@@ -148,10 +157,10 @@ useful terminal title yet. No extra model requests are made.
 - **Starts when enabled.** Herdr's startup and agent-detection hooks start a
   single background watcher per server. Opening the bar also ensures it is running. After
   linking or enabling the plugin in an already running server, start it with
-  `herdr plugin action invoke herdr-bar.start-titles`.
-- **Stop or resume.** `herdr plugin action invoke herdr-bar.stop-titles` stops
+  `herdr plugin action invoke herdr-command-plugin.start-titles`.
+- **Stop or resume.** `herdr plugin action invoke herdr-command-plugin.stop-titles` stops
   naming for this server; event hooks and popup opens leave it stopped until
-  you invoke `herdr-bar.start-titles` again. Disabling or uninstalling the
+  you invoke `herdr-command-plugin.start-titles` again. Disabling or uninstalling the
   plugin stops its connected watchers within ten seconds.
 - **Local sources.** Terminal task titles work even when Herdr has no agent
   session ID, with ownership tied to the pane and terminal. Claude transcript
@@ -234,7 +243,7 @@ unknown. With several agents in one tab, the most urgent one leads.
 - **Logos need the font.** Logos appear under the same `agent_icons` rule as
   the bar; without the font, tabs show the status glyph alone.
 - **Turning it off.** Set `"tab_status": false` in the [config](#configuring),
-  or stop the watcher with `herdr-bar.stop-titles`; both restore names whose
+  or stop the watcher with `herdr-command-plugin.stop-titles`; both restore names whose
   prefixes the watcher still owns. `tab_status` does not control task naming:
   set `"auto_titles": false` as well to disable all automatic tab updates.
 
@@ -253,7 +262,7 @@ Cmd+K, add a second binding for a chord your terminal can actually deliver —
 [[keys.command]]
 key = ["prefix+k", "ctrl+alt+k"]
 type = "plugin_action"
-command = "herdr-bar.open"
+command = "herdr-command-plugin.open"
 description = "command bar"
 ```
 
@@ -366,7 +375,7 @@ matched on something off screen simply shows no highlight.
 ## Configuring
 
 Optional. Write `config.json` in the plugin config directory
-(`herdr plugin config-dir herdr-bar`):
+(`herdr plugin config-dir herdr-command-plugin`):
 
 ```json
 {
@@ -415,7 +424,7 @@ Detection cannot verify your terminal's active font mapping; if you see boxes,
 check the mapping or set `"agent_icons": "none"`. Unknown agents keep text labels.
 
 Popup size lives in herdr, not here. Override the manifest's `74%` × `62%` per
-invocation with `herdr plugin pane open --plugin herdr-bar --entrypoint bar
+invocation with `herdr plugin pane open --plugin herdr-command-plugin --entrypoint bar
 --placement popup --width 60% --height 50%`.
 
 ## How it works
@@ -457,16 +466,16 @@ in the server's state subdirectory. Tab titles themselves are stored by Herdr.
 ## Development
 
 ```bash
-git clone https://github.com/jeffarese/herdr-bar
-cd herdr-bar
-HERDR_BAR_BUILD=source sh scripts/install.sh   # build this clone (Rust 1.88+)
+git clone https://github.com/adhikasp/herdr-command-plugin
+cd herdr-command-plugin
+HERDR_COMMAND_PLUGIN_BUILD=source sh scripts/install.sh   # build this clone (Rust 1.88+)
 herdr plugin link .         # link never runs the build step, so build first
 
 cargo test --release                            # everything below, in one go
-HERDR_BAR_PARITY_ONLY=bar-rename cargo test --test parity   # one parity scenario
-HERDR_BAR_PARITY_BLESS=1 cargo test --test parity           # accept an intended UI change
-bin/herdr-bar --doctor                          # environment diagnostics
-bin/herdr-bar --list                            # the rows, as JSON
+HERDR_COMMAND_PLUGIN_PARITY_ONLY=bar-rename cargo test --test parity   # one parity scenario
+HERDR_COMMAND_PLUGIN_PARITY_BLESS=1 cargo test --test parity           # accept an intended UI change
+bin/herdr-command-plugin --doctor                          # environment diagnostics
+bin/herdr-command-plugin --list                            # the rows, as JSON
 ```
 
 The bar started as a Python package, and the tests keep the Rust port to what
@@ -480,10 +489,10 @@ When a UI change is intended, bless the golden and review its diff.
 
 The README demo is recorded from the real binary, on a pseudo-terminal against
 a fake herdr session, in real time. `cargo run --release --features demo
---example record_demo` writes `demo/herdr-bar.gif` and `demo/herdr-bar.mp4`
+--example record_demo` writes `demo/herdr-command-plugin.gif` and `demo/herdr-command-plugin.mp4`
 (needs `ffmpeg`, and the Herdr Agent Icons Max font for the logos); copy the
 GIF to `assets/demo.gif`. The `demo` feature is never part of the plugin build.
-`herdr plugin log list --plugin herdr-bar` shows what herdr recorded when it
+`herdr plugin log list --plugin herdr-command-plugin` shows what herdr recorded when it
 launched the plugin.
 
 ## Goes well with
@@ -492,6 +501,12 @@ launched the plugin.
 other half of the loop. This bar jumps you to the tabs you already have; that
 plugin opens the one you don't — it asks which folder and which agent,
 completes real paths, remembers where you work, and starts the agent for you.
+
+## Credits
+
+Forked from [jeffarese/herdr-bar](https://github.com/jeffarese/herdr-bar), which
+built the bar, the tab titles and the agent icons. This fork adds the command
+palette, everything-search with kind prefixes, and modal mode.
 
 ## License
 

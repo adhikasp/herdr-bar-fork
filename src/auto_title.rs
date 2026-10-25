@@ -473,8 +473,8 @@ fn strip_dash_underscore(text: &str) -> &str {
 /// Whether an agent name is just the one derived from its folder.
 ///
 /// `herdr agent start` requires a name, so launchers such as
-/// herdr-newtab-plus fill it from the folder (`herdr-bar`, then
-/// `herdr-bar-2`...). That is a default, not a name somebody chose.
+/// herdr-newtab-plus fill it from the folder (`herdr-command-plugin`, then
+/// `herdr-command-plugin-2`...). That is a default, not a name somebody chose.
 pub(crate) fn default_agent_name(name: &Value, kind: &Value, cwd: &str) -> bool {
     let Some(name) = name.as_str().filter(|n| !n.is_empty()) else { return false };
     let trimmed = cwd.trim_end_matches('/');
@@ -843,11 +843,11 @@ mod tests {
     #[test]
     fn default_names() {
         let kind = Value::str("claude");
-        assert!(default_agent_name(&Value::str("herdr-bar"), &kind, "/src/herdr-bar/"));
-        assert!(default_agent_name(&Value::str("herdr-bar-2"), &kind, "/src/herdr-bar"));
-        assert!(!default_agent_name(&Value::str("herdr-bar-1"), &kind, "/src/herdr-bar"));
+        assert!(default_agent_name(&Value::str("herdr-command-plugin"), &kind, "/src/herdr-command-plugin/"));
+        assert!(default_agent_name(&Value::str("herdr-command-plugin-2"), &kind, "/src/herdr-command-plugin"));
+        assert!(!default_agent_name(&Value::str("herdr-command-plugin-1"), &kind, "/src/herdr-command-plugin"));
         assert!(default_agent_name(&Value::str("claude-1x"), &kind, "/src/1x"));
-        assert!(!default_agent_name(&Value::str("mine"), &kind, "/src/herdr-bar"));
+        assert!(!default_agent_name(&Value::str("mine"), &kind, "/src/herdr-command-plugin"));
     }
 
     // -- ports of tests/test_auto_title.py ------------------------------------

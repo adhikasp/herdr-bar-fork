@@ -1,4 +1,4 @@
-# Put the herdr-bar binary at bin\herdr-bar.exe for this checkout.
+# Put the herdr-command-plugin binary at bin\herdr-command-plugin.exe for this checkout.
 #
 # Herdr runs this as the plugin's Windows [[build]] step on `herdr plugin
 # install` (updating is reinstalling; `plugin link` never runs it: run it
@@ -7,11 +7,11 @@
 # falls back to `cargo build --release` (Rust 1.88+) when there is no binary for this
 # machine or the download or the check fails.
 #
-#   HERDR_BAR_BUILD=source     skip the download and build with cargo
-#   HERDR_BAR_DOWNLOAD_BASE=   release download URL to use instead of GitHub's
+#   HERDR_COMMAND_PLUGIN_BUILD=source     skip the download and build with cargo
+#   HERDR_COMMAND_PLUGIN_DOWNLOAD_BASE=   release download URL to use instead of GitHub's
 #
-# The manifest's shared commands name `bin/herdr-bar`, so bin\herdr-bar (no
-# extension) is installed beside bin\herdr-bar.exe: launchers that append .exe
+# The manifest's shared commands name `bin/herdr-command-plugin`, so bin\herdr-command-plugin (no
+# extension) is installed beside bin\herdr-command-plugin.exe: launchers that append .exe
 # find the one, launchers that take the path as written find the other.
 
 $ErrorActionPreference = 'Stop'
@@ -20,11 +20,11 @@ Set-StrictMode -Version 2
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $Root
 $BinDir = Join-Path $Root 'bin'
-$Target = Join-Path $BinDir 'herdr-bar.exe'
-$Alias = Join-Path $BinDir 'herdr-bar'
-$RepoUrl = 'https://github.com/jeffarese/herdr-bar'
+$Target = Join-Path $BinDir 'herdr-command-plugin.exe'
+$Alias = Join-Path $BinDir 'herdr-command-plugin'
+$RepoUrl = 'https://github.com/adhikasp/herdr-command-plugin'
 
-function Say([string]$Message) { [Console]::Error.WriteLine("herdr-bar: $Message") }
+function Say([string]$Message) { [Console]::Error.WriteLine("herdr-command-plugin: $Message") }
 
 $Version = $null
 foreach ($Line in Get-Content -LiteralPath (Join-Path $Root 'herdr-plugin.toml')) {
@@ -46,8 +46,8 @@ function Get-AssetName {
         if (-not $Arch) { $Arch = $env:PROCESSOR_ARCHITECTURE }
     }
     switch -Regex ($Arch) {
-        '^(X64|AMD64)$' { return 'herdr-bar-windows-x86_64.exe' }
-        '^ARM64$' { return 'herdr-bar-windows-aarch64.exe' }
+        '^(X64|AMD64)$' { return 'herdr-command-plugin-windows-x86_64.exe' }
+        '^ARM64$' { return 'herdr-command-plugin-windows-aarch64.exe' }
         default { return $null }
     }
 }
@@ -77,7 +77,7 @@ function Invoke-Native([string]$Command, [string[]]$Arguments, [switch]$ShowOutp
 # failed swap restores whatever was moved aside.
 function Install-Binary([string]$Source) {
     New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
-    foreach ($Stale in @(Get-ChildItem -LiteralPath $BinDir -Filter 'herdr-bar*.old.*' -ErrorAction SilentlyContinue)) {
+    foreach ($Stale in @(Get-ChildItem -LiteralPath $BinDir -Filter 'herdr-command-plugin*.old.*' -ErrorAction SilentlyContinue)) {
         Remove-Item -LiteralPath $Stale.FullName -Force -ErrorAction SilentlyContinue
     }
     $Pairs = @()
@@ -126,10 +126,10 @@ function Invoke-Download {
         Say "no prebuilt binary for this architecture"
         return $false
     }
-    $Base = $env:HERDR_BAR_DOWNLOAD_BASE
+    $Base = $env:HERDR_COMMAND_PLUGIN_DOWNLOAD_BASE
     if (-not $Base) { $Base = "$RepoUrl/releases/download/v$Version" }
-    if ($Base -notmatch '^(https|file)://') { Say "warning: HERDR_BAR_DOWNLOAD_BASE is not https: $Base" }
-    $Temp = Join-Path ([System.IO.Path]::GetTempPath()) ("herdr-bar-" + [System.Guid]::NewGuid().ToString('N'))
+    if ($Base -notmatch '^(https|file)://') { Say "warning: HERDR_COMMAND_PLUGIN_DOWNLOAD_BASE is not https: $Base" }
+    $Temp = Join-Path ([System.IO.Path]::GetTempPath()) ("herdr-command-plugin-" + [System.Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $Temp | Out-Null
     try {
         Say "downloading $Asset $Version"
@@ -167,7 +167,7 @@ function Invoke-Download {
         # Run it from bin\ rather than %TEMP%, which AppLocker or similar
         # policies may block, and only keep it if it reports this version.
         New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
-        $Check = Join-Path $BinDir ".herdr-bar.check.$PID.exe"
+        $Check = Join-Path $BinDir ".herdr-command-plugin.check.$PID.exe"
         Copy-Item -LiteralPath $File -Destination $Check -Force
         try {
             $Code = Invoke-Native $Check @('--version')
@@ -175,8 +175,8 @@ function Invoke-Download {
                 Say "the downloaded $Asset does not run on this machine"
                 return $false
             }
-            if ($script:NativeOutput -ne "herdr-bar $Version") {
-                Say "downloaded binary reports '$($script:NativeOutput)', expected 'herdr-bar $Version'"
+            if ($script:NativeOutput -ne "herdr-command-plugin $Version") {
+                Say "downloaded binary reports '$($script:NativeOutput)', expected 'herdr-command-plugin $Version'"
                 return $false
             }
             Install-Binary $Check
@@ -194,7 +194,7 @@ function Invoke-Download {
 
 function Invoke-SourceBuild {
     if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
-        Say 'cargo is not installed (building herdr-bar needs Rust 1.88 or newer)'
+        Say 'cargo is not installed (building herdr-command-plugin needs Rust 1.88 or newer)'
         return $false
     }
     Say 'building from source with cargo'
@@ -204,10 +204,10 @@ function Invoke-SourceBuild {
         # target\ is left in place: in a development clone it is the build cache.
         $Code = Invoke-Native 'cargo' $CargoArgs -ShowOutput
         if ($Code -ne 0) {
-            Say "cargo build failed (exit $Code; herdr-bar needs Rust 1.88 or newer)"
+            Say "cargo build failed (exit $Code; herdr-command-plugin needs Rust 1.88 or newer)"
             return $false
         }
-        Install-Binary (Join-Path $Root 'target\release\herdr-bar.exe')
+        Install-Binary (Join-Path $Root 'target\release\herdr-command-plugin.exe')
         return $true
     } catch {
         Say "cargo build failed: $($_.Exception.Message)"
@@ -215,7 +215,7 @@ function Invoke-SourceBuild {
     }
 }
 
-if ($env:HERDR_BAR_BUILD -ne 'source' -and (Invoke-Download)) {
+if ($env:HERDR_COMMAND_PLUGIN_BUILD -ne 'source' -and (Invoke-Download)) {
     Say "installed $Target"
     exit 0
 }
@@ -223,8 +223,8 @@ if (Invoke-SourceBuild) {
     Say "installed $Target"
     exit 0
 }
-Say "could not install herdr-bar ${Version}: no prebuilt binary could be downloaded"
+Say "could not install herdr-command-plugin ${Version}: no prebuilt binary could be downloaded"
 Say 'and building from source failed. Install Rust 1.88 or newer'
 Say '(https://rustup.rs), then reinstall the plugin:'
-Say '  herdr plugin install jeffarese/herdr-bar'
+Say '  herdr plugin install adhikasp/herdr-command-plugin'
 exit 1

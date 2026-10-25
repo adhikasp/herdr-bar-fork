@@ -20,7 +20,7 @@ const MAX_BACKOFF: f64 = if cfg!(test) { 0.4 } else { 30.0 };
 /// In place of an inherited descriptor: the worker claims the lock file by name.
 pub const LOCK_BY_NAME: &str = "-";
 
-pub const BINARY: &str = if cfg!(windows) { "herdr-bar.exe" } else { "herdr-bar" };
+pub const BINARY: &str = if cfg!(windows) { "herdr-command-plugin.exe" } else { "herdr-command-plugin" };
 
 fn open_append(path: &Path) -> std::result::Result<File, String> {
     host::open_append(path).map_err(|e| host::os_error_path(&e, path))
@@ -85,7 +85,7 @@ pub fn staged_binary(exe: &Path, directory: &Path) -> std::io::Result<PathBuf> {
         .map(|d| d.as_nanos())
         .unwrap_or(0);
     let suffix = std::env::consts::EXE_SUFFIX;
-    let name = format!("herdr-bar-{}-{}{}", meta.len(), modified, suffix);
+    let name = format!("herdr-command-plugin-{}-{}{}", meta.len(), modified, suffix);
     let target = directory.join(&name);
     if !std::fs::metadata(&target).map(|m| m.len() == meta.len()).unwrap_or(false) {
         let temp = directory.join(format!("{}.{}.tmp", name, std::process::id()));
@@ -102,7 +102,7 @@ pub fn staged_binary(exe: &Path, directory: &Path) -> std::io::Result<PathBuf> {
         for entry in entries.flatten() {
             let file = entry.file_name();
             let file = file.to_string_lossy();
-            if file != name && file.starts_with("herdr-bar-") && file.ends_with(suffix) && !file.ends_with(".tmp") {
+            if file != name && file.starts_with("herdr-command-plugin-") && file.ends_with(suffix) && !file.ends_with(".tmp") {
                 // Fails while an older worker still runs it; fine.
                 let _ = std::fs::remove_file(entry.path());
             }
@@ -148,7 +148,7 @@ pub fn start(resume: bool) {
         launch(&directory, resume)
     })();
     if let Err(message) = attempt {
-        eprintln!("herdr-bar: title watcher could not start: {}", message);
+        eprintln!("herdr-command-plugin: title watcher could not start: {}", message);
     }
 }
 
@@ -309,7 +309,7 @@ fn registered_root(client: &mut HerdrClient) -> Result<Option<PathBuf>> {
     let plugins = installed_plugins(client)?;
     check_plugins(&plugins, &Config::load().tab_renaming_plugins)?;
     for plugin in &plugins {
-        if plugin.get("plugin_id").and_then(|v| v.as_str()) == Some("herdr-bar") {
+        if plugin.get("plugin_id").and_then(|v| v.as_str()) == Some("herdr-command-plugin") {
             if !plugin.get("enabled").map(|v| v.truthy()).unwrap_or(false) {
                 return Ok(None);
             }
@@ -451,14 +451,14 @@ pub fn watch(lock_fd: Option<i64>) -> i32 {
         Some(fd) => match adopt(fd) {
             Some(file) => Some(file),
             None => {
-                eprintln!("herdr-bar: title watcher: [Errno 9] Bad file descriptor");
+                eprintln!("herdr-command-plugin: title watcher: [Errno 9] Bad file descriptor");
                 return 1;
             }
         },
         None => match claim(&directory) {
             Ok(lock) => lock,
             Err(message) => {
-                eprintln!("herdr-bar: title watcher: {}", message);
+                eprintln!("herdr-command-plugin: title watcher: {}", message);
                 return 1;
             }
         },
@@ -498,7 +498,7 @@ pub fn watch(lock_fd: Option<i64>) -> i32 {
     let current_revision = match revision(&current_root) {
         Ok(found) => found,
         Err(error) => {
-            eprintln!("herdr-bar: title watcher: {}", error);
+            eprintln!("herdr-command-plugin: title watcher: {}", error);
             return 1;
         }
     };
@@ -561,7 +561,7 @@ pub fn watch(lock_fd: Option<i64>) -> i32 {
             Ok(None) => {}
             Err(error) if error.kind == Kind::Renaming => {
                 // Do not even restore our prefixes: another writer owns names now.
-                eprintln!("herdr-bar: {}", error);
+                eprintln!("herdr-command-plugin: {}", error);
                 events.close();
                 return 0;
             }
@@ -570,7 +570,7 @@ pub fn watch(lock_fd: Option<i64>) -> i32 {
                 // to a CLI that might address a different server or spawn one.
                 let message = error.message.clone();
                 if message != last_error {
-                    eprintln!("herdr-bar: title watcher retrying: {}", message);
+                    eprintln!("herdr-command-plugin: title watcher retrying: {}", message);
                     last_error = message;
                 }
                 events.close();
@@ -902,7 +902,7 @@ mod tests {
         fn plugins(root: &Path, enabled: bool, extra: &str) -> Value {
             let root = pyjson::dumps(&Value::str(root.to_string_lossy()), false);
             json(&format!(
-                r#"{{"plugins": [{{"plugin_id": "herdr-bar", "enabled": {}, "plugin_root": {}}}{}]}}"#,
+                r#"{{"plugins": [{{"plugin_id": "herdr-command-plugin", "enabled": {}, "plugin_root": {}}}{}]}}"#,
                 if enabled { "true" } else { "false" },
                 root,
                 extra
@@ -1117,7 +1117,7 @@ mod tests {
 
     #[test]
     fn staged_binary_is_reused_and_replaced() {
-        let base = std::env::temp_dir().join(format!("herdr-bar-stage-{}", std::process::id()));
+        let base = std::env::temp_dir().join(format!("herdr-command-plugin-stage-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&base);
         let state = base.join("state");
         std::fs::create_dir_all(&state).unwrap();
@@ -1142,6 +1142,6 @@ mod tests {
         let base = std::fs::canonicalize(std::env::temp_dir()).unwrap();
         assert!(same_root(&base, &std::env::temp_dir()));
         assert!(same_root(&base, &base.join(".")));
-        assert!(!same_root(&base, &base.join("herdr-bar-no-such-dir")));
+        assert!(!same_root(&base, &base.join("herdr-command-plugin-no-such-dir")));
     }
 }

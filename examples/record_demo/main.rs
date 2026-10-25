@@ -1,7 +1,7 @@
-//! Film the real herdr-bar binary driving a fake, very busy Herdr session.
+//! Film the real herdr-command-plugin binary driving a fake, very busy Herdr session.
 //!
 //! ```text
-//! cargo run --release --features demo --example record_demo             # demo/herdr-bar.mp4 + .gif
+//! cargo run --release --features demo --example record_demo             # demo/herdr-command-plugin.mp4 + .gif
 //! cargo run --release --features demo --example record_demo -- --no-gif
 //! cargo run --release --features demo --example record_demo -- --stills # one PNG per scene, no video
 //! ```
@@ -158,16 +158,28 @@ mod unix {
         );
         write(&bin.join("ps"), &ps, true);
         write(&bin.join("fc-match"), "#!/bin/sh\nexit 1\n", true);
+        // The command palette lists plugin actions through the CLI.
+        write(&bin.join("herdr"), &format!("#!/bin/sh\ncat <<'EOF'\n{}\nEOF\n", PLUGIN_ACTIONS), true);
     }
+
+    /// What `herdr plugin action list` answers in the demo.
+    const PLUGIN_ACTIONS: &str = r#"{"result": {"actions": [
+        {"plugin_id": "newtab-plus", "action_id": "open", "title": "New tab in a folder", "description": "Pick a folder and an agent", "contexts": ["global"]},
+        {"plugin_id": "herdr-command-plugin", "action_id": "start-titles", "title": "Start tab watcher", "description": "Automatic task titles", "contexts": ["global"]},
+        {"plugin_id": "notify", "action_id": "mute", "title": "Mute notifications", "description": "Until the next agent finishes", "contexts": ["global"]}
+    ]}}"#;
+
+    /// Herdr's own key bindings, shown beside each command.
+    const HERDR_CONFIG: &str = "[keys]\nprefix = \"ctrl+b\"\nsplit_horizontal = \"prefix+%\"\nsplit_vertical = \"prefix+-\"\nclose_pane = \"prefix+x\"\nzoom = \"prefix+z\"\nfocus_pane_left = \"prefix+h\"\nfocus_pane_down = \"prefix+j\"\nfocus_pane_up = \"prefix+k\"\nfocus_pane_right = \"prefix+l\"\nnew_tab = \"prefix+c\"\nclose_tab = \"prefix+&\"\nnew_workspace = \"prefix+w\"\nnext_tab = \"prefix+n\"\nprevious_tab = \"prefix+p\"\nreload_config = \"prefix+r\"\n";
 
     fn binary() -> PathBuf {
         let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
         let status = Command::new(cargo)
-            .args(["build", "--release", "--bin", "herdr-bar"])
+            .args(["build", "--release", "--bin", "herdr-command-plugin"])
             .current_dir(ROOT)
             .status()
             .expect("run cargo build");
-        let path = Path::new(ROOT).join("target/release/herdr-bar");
+        let path = Path::new(ROOT).join("target/release/herdr-command-plugin");
         if !status.success() || !path.exists() {
             panic!(
                 "could not build {}; run `cargo build --release` first",
@@ -235,7 +247,8 @@ mod unix {
         fn type_text(&mut self, text: &str, dwell: f64) {
             for c in text.chars() {
                 let mut buffer = [0u8; 4];
-                self.send(c.encode_utf8(&mut buffer).as_bytes(), &c.to_string(), dwell);
+                let chip = if c == ' ' { "space".to_string() } else { c.to_string() };
+                self.send(c.encode_utf8(&mut buffer).as_bytes(), &chip, dwell);
             }
         }
 
@@ -248,94 +261,64 @@ mod unix {
         }
     }
 
-    /// The script: the old recorder's scenes, captions, keys and pauses.
+    /// The script: one scene per feature, captioned, with real keys and pauses.
     fn perform(r: &mut Recorder, spawn: impl FnOnce() -> Session) {
-        r.say("one chord, and the whole session is a list");
-        // New: the empty panel first, so the bar is seen opening.
+        r.say("one chord · every space, tab, agent and pane in one list");
+        // The empty panel first, so the bar is seen opening.
         r.hold(0.4);
         r.session = Some(spawn());
-        r.hold(1.3);
+        r.hold(2.6);
 
-        r.say("automatic tab titles · the task once, plus its running time");
-        r.hold(1.9);
+        r.say("Claude, Codex, Gemini, Pi, Grok and Kimi · live status, running time");
+        r.repeat("down", 3, 0.45);
+        r.hold(1.0);
 
-        r.say("Claude, Codex, Gemini, Pi, Grok and Kimi · one session");
-        r.hold(1.8);
-
-        r.say("needs-you first, then done · where you just were floats up");
-        r.hold(1.5);
-
-        r.say("↑↓ moves · the right column tails the pane you land on");
-        r.repeat("down", 4, 0.5);
-        r.hold(0.7);
-
-        r.say("twenty-five rows, and it scrolls");
-        r.repeat("down", 7, 0.19);
-        r.hold(1.1);
-
-        r.say("type a few letters · fuzzy, and it underlines what matched");
-        r.key("ctrl+u", 0.2);
+        r.say("type to fuzzy-search all of it · matches underlined");
         r.type_text("invo", 0.16);
-        r.hold(2.2);
-
-        r.say("search the task title and its project · both stay searchable");
-        r.key("ctrl+u", 0.22);
-        r.type_text("cache api", 0.15);
-        r.hold(2.2);
-
-        r.say("terms match independently · title, repo, branch, agent");
-        r.key("ctrl+u", 0.22);
-        r.type_text("back harbor", 0.15);
         r.hold(2.0);
 
-        r.say("nothing matching says so, and tells you the way out");
-        r.key("ctrl+u", 0.22);
-        r.type_text("zzz", 0.15);
-        r.hold(1.6);
+        r.say("“s ” keeps it to spaces · s hrb finds harbor");
+        r.key("ctrl+u", 0.25);
+        r.type_text("s hrb", 0.2);
+        r.hold(2.2);
 
-        r.say("! narrows to the agents waiting on you");
+        r.say("“a ” is agents only · a codex");
+        r.key("ctrl+u", 0.25);
+        r.type_text("a codex", 0.15);
+        r.hold(2.0);
+
+        r.say("“p ” is the panes you named · ⏎ focuses that exact pane");
+        r.key("ctrl+u", 0.25);
+        r.type_text("p ", 0.2);
+        r.hold(1.8);
+
+        r.say("commands join the search · split, zoom, close, reload …");
+        r.key("ctrl+u", 0.25);
+        r.type_text("split", 0.16);
+        r.hold(2.2);
+
+        r.say("> is the whole palette · herdr's actions and every plugin's, with their keys");
+        r.key("ctrl+u", 0.25);
+        r.type_text(">", 0.2);
+        r.hold(1.4);
+        r.repeat("down", 23, 0.11);
+        r.hold(1.8);
+
+        r.say("a kind with no match widens back to everything, and says so");
+        r.key("ctrl+u", 0.25);
+        r.type_text("p invoice", 0.15);
+        r.hold(2.4);
+
+        r.say("! is everything waiting on you · and it updates while open");
         r.key("ctrl+u", 0.25);
         r.type_text("!", 0.2);
-        r.hold(2.1);
-
-        r.say("% is the panes you named · ⏎ focuses that exact pane");
-        r.key("ctrl+u", 0.25);
-        r.type_text("%", 0.2);
-        r.hold(1.7);
-        r.repeat("down", 2, 0.6);
-        r.hold(0.9);
-
-        r.say("⇥ cycles the scopes · everything, agents, panes, shells, needs you");
-        r.key("ctrl+u", 0.25);
-        r.repeat("tab", 4, 1.1);
-        r.key("tab", 0.8);
-
-        r.say("^r renames the tab behind any row · enter saves, esc keeps");
-        r.key("ctrl+r", 0.7);
-        r.type_text("retry budget", 0.13);
         r.hold(1.2);
-        r.key("enter", 0.8);
-        r.hold(1.2);
-
-        r.say("^o folds the preview away when you want the room");
-        r.key("ctrl+o", 1.7);
-        r.key("ctrl+o", 0.9);
-
-        r.say("and it keeps updating while it is open");
-        r.hold(0.8);
         r.restatus("w1:p7", "blocked");
-        r.hold(2.3);
+        r.hold(2.2);
 
-        r.say("⌦ closes a tab · the footer asks first, esc calls it off");
-        r.key("ctrl+u", 0.25);
-        r.type_text("logs", 0.16);
-        r.hold(0.9);
-        r.key("delete", 1.7);
-        r.key("esc", 1.1);
-
-        r.say("⏎ jumps · tab focused, pane focused, popup gone");
+        r.say("⏎ jumps there · or runs the command · popup gone");
         r.key("ctrl+u", 0.22);
-        r.type_text("limit", 0.16);
+        r.type_text("rate", 0.16);
         r.hold(1.3);
         r.key("enter", 0.1);
         r.hold(2.0);
@@ -507,6 +490,7 @@ mod unix {
         }
         fake_tools(&bin, &etimes);
         write(&config.join("config.json"), CONFIG, false);
+        write(&home.join(".config/herdr/config.toml"), HERDR_CONFIG, false);
         // Where the demo has "been" before the bar opened, most recent first.
         let recents: Vec<String> = session
             .get("recents")
@@ -570,7 +554,7 @@ mod unix {
             ("HERDR_SOCKET_PATH", s(&socket)),
             ("HERDR_PLUGIN_CONFIG_DIR", s(&config)),
             ("HERDR_PLUGIN_STATE_DIR", s(&state_dir)),
-            ("HERDR_BIN_PATH", "/nonexistent/herdr".into()),
+            ("HERDR_BIN_PATH", s(&bin.join("herdr"))),
         ]);
 
         // -- the camera -------------------------------------------------------
@@ -675,11 +659,11 @@ mod unix {
 
         // Lossless first: the GIF palette is built from it, not from h264,
         // whose chroma artefacts turn into palette noise once quantised.
-        let master = options.out.join(".herdr-bar.mkv");
+        let master = options.out.join(".herdr-command-plugin.mkv");
         let (master, mp4, gif) = (
             s(&master),
-            s(&options.out.join("herdr-bar.mp4")),
-            s(&options.out.join("herdr-bar.gif")),
+            s(&options.out.join("herdr-command-plugin.mp4")),
+            s(&options.out.join("herdr-command-plugin.gif")),
         );
         let all: Vec<&Frame> = frames.iter().collect();
         pipe(&mut painter, &all, &["-c:v", "ffv1", &master]);

@@ -709,16 +709,16 @@ mod tests {
         let mut snapshot = pyjson::loads(
             r#"{"workspaces": [{"workspace_id": "w1", "label": "Tools"}],
                 "tabs": [{"tab_id": "t1", "workspace_id": "w1", "label": "Fix search"}],
-                "panes": [{"pane_id": "p1", "tab_id": "t1", "cwd": "/work/herdr-bar/"}],
+                "panes": [{"pane_id": "p1", "tab_id": "t1", "cwd": "/work/herdr-command-plugin/"}],
                 "agents": [{"pane_id": "p1", "tab_id": "t1", "agent": "codex"}]}"#,
         )
         .unwrap();
         for (summary, expected) in [
-            ("Fix search | herdr-bar", ""),
+            ("Fix search | herdr-command-plugin", ""),
             ("FIX  SEARCH | Tools", ""),
             ("Fix search | investigate indexing", "Fix search | investigate indexing"),
-            ("Fix search results | herdr-bar", "Fix search results | herdr-bar"),
-            ("Investigate indexing | herdr-bar", "Investigate indexing | herdr-bar"),
+            ("Fix search results | herdr-command-plugin", "Fix search results | herdr-command-plugin"),
+            ("Investigate indexing | herdr-command-plugin", "Investigate indexing | herdr-command-plugin"),
         ] {
             set(&mut snapshot, "panes", 0, "title", Value::str(summary));
             let item = by_kind(&build_items(&snapshot), KIND_AGENT).remove(0);

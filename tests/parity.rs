@@ -12,9 +12,9 @@
 //! result must equal `tests/parity/golden.json` after masking.
 //!
 //! Environment:
-//! * `HERDR_BAR_PARITY_ONLY=<substring>` runs only matching scenarios.
-//! * `HERDR_BAR_PARITY_JOBS=<n>` scenarios at once (default 4).
-//! * `HERDR_BAR_PARITY_BLESS=1` rewrites `tests/parity/golden.json` from this
+//! * `HERDR_COMMAND_PLUGIN_PARITY_ONLY=<substring>` runs only matching scenarios.
+//! * `HERDR_COMMAND_PLUGIN_PARITY_JOBS=<n>` scenarios at once (default 4).
+//! * `HERDR_COMMAND_PLUGIN_PARITY_BLESS=1` rewrites `tests/parity/golden.json` from this
 //!   run instead of comparing, for intended UI changes. Review the diff.
 #![cfg(unix)]
 
@@ -85,9 +85,9 @@ fn transcript_text(result: &Result<Value, String>) -> String {
 fn parity() {
     let spec = load(&PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/parity/scenarios.json"));
     let machine = spec.get("machine").clone();
-    let only = std::env::var("HERDR_BAR_PARITY_ONLY").unwrap_or_default();
-    let bless = std::env::var("HERDR_BAR_PARITY_BLESS").map(|v| !v.is_empty() && v != "0").unwrap_or(false);
-    let jobs: usize = std::env::var("HERDR_BAR_PARITY_JOBS").ok().and_then(|v| v.parse().ok()).unwrap_or(4).max(1);
+    let only = std::env::var("HERDR_COMMAND_PLUGIN_PARITY_ONLY").unwrap_or_default();
+    let bless = std::env::var("HERDR_COMMAND_PLUGIN_PARITY_BLESS").map(|v| !v.is_empty() && v != "0").unwrap_or(false);
+    let jobs: usize = std::env::var("HERDR_COMMAND_PLUGIN_PARITY_JOBS").ok().and_then(|v| v.parse().ok()).unwrap_or(4).max(1);
     let golden = if bless && !golden_path().exists() { Value::Dict(Map::new()) } else { load(&golden_path()) };
 
     let scenarios: Vec<Value> = spec
@@ -169,7 +169,7 @@ fn parity() {
         retries += retried as usize;
         let expected = golden.get(name);
         if expected.is_null() {
-            eprintln!("✗ {}: no golden entry (bless with HERDR_BAR_PARITY_BLESS=1)", name);
+            eprintln!("✗ {}: no golden entry (bless with HERDR_COMMAND_PLUGIN_PARITY_BLESS=1)", name);
             failures.push(name.to_string());
             continue;
         }

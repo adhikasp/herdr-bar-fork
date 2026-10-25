@@ -35,14 +35,14 @@ impl Drop for TempDir {
     }
 }
 
-/// A plugin directory: the manifest plus `bin/herdr-bar`.
+/// A plugin directory: the manifest plus `bin/herdr-command-plugin`.
 fn plugin_root(path: &Path, binary: Option<&str>) -> PathBuf {
     std::fs::create_dir_all(path.join("bin")).unwrap();
     std::fs::write(path.join("herdr-plugin.toml"), "").unwrap();
-    let target = path.join("bin").join("herdr-bar");
+    let target = path.join("bin").join("herdr-command-plugin");
     match binary {
         None => {
-            std::fs::copy(env!("CARGO_BIN_EXE_herdr-bar"), &target).unwrap();
+            std::fs::copy(env!("CARGO_BIN_EXE_herdr-command-plugin"), &target).unwrap();
         }
         Some(script) => {
             use std::os::unix::fs::PermissionsExt;
@@ -122,7 +122,7 @@ impl FakeHerdr {
         let methods = Arc::new(Mutex::new(Vec::new()));
         let stop = Arc::new(AtomicBool::new(false));
         let plugins = format!(
-            r#"{{"result": {{"plugins": [{{"plugin_id": "herdr-bar", "enabled": true, "plugin_root": {}}}]}}}}"#,
+            r#"{{"result": {{"plugins": [{{"plugin_id": "herdr-command-plugin", "enabled": true, "plugin_root": {}}}]}}}}"#,
             quote(&registered_root.to_string_lossy())
         );
         let title = title.to_string();
@@ -211,7 +211,7 @@ fn processes_mentioning(needle: &str) -> Vec<i32> {
         .collect()
 }
 
-/// The test's environment for a herdr-bar process.
+/// The test's environment for a herdr-command-plugin process.
 fn command(program: &Path, temp: &Path, socket: &Path, root: &Path) -> Command {
     let mut command = Command::new(program);
     command
@@ -272,7 +272,7 @@ fn real_process_keeps_lock_updates_closed_popup_and_stops() {
     let server = FakeHerdr::new(&socket, &root, "Delayed task | app");
     let _watchers = StopWatchers { state: base.clone(), root: root.clone() };
     std::fs::write(base.join("config.json"), r#"{"agent_icons": "none", "auto_titles": true, "tab_status": true}"#).unwrap();
-    let binary = root.join("bin").join("herdr-bar");
+    let binary = root.join("bin").join("herdr-command-plugin");
     let needle = root.to_string_lossy().into_owned();
     let start = || {
         let status = command(&binary, &base, &socket, &root).arg("--start-titles").status().unwrap();
@@ -318,7 +318,7 @@ fn replacement_root_hands_off_and_keeps_the_singleton_lock() {
     let server = FakeHerdr::new(&socket, &new_root, "Task | app");
     std::fs::write(base.join("config.json"), r#"{"agent_icons": "none", "auto_titles": true, "tab_status": true}"#).unwrap();
 
-    let child = command(&root.join("bin").join("herdr-bar"), &base, &socket, &root)
+    let child = command(&root.join("bin").join("herdr-command-plugin"), &base, &socket, &root)
         .args(["--watch-titles", "-"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())

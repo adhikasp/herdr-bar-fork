@@ -1767,7 +1767,7 @@ mod tests {
         let env = testutil::env_lock();
         // Command rows show herdr's key bindings; keep the machine's own out.
         let mut vars = testutil::EnvVars::new();
-        vars.set("HERDR_CONFIG_PATH", "/nonexistent/herdr-bar-test/config.toml");
+        vars.set("HERDR_CONFIG_PATH", "/nonexistent/herdr-command-plugin-test/config.toml");
         let fake = Fake::new(snapshot);
         let mut client = fake.client();
         let pool = client.snapshot().map(|snapshot| Pool::build(&snapshot, &config));

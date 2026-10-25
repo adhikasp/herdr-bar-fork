@@ -1,10 +1,10 @@
 name: release
 
-# Builds the herdr-bar binary for every platform the plugin supports and
+# Builds the herdr-command-plugin binary for every platform the plugin supports and
 # attaches them to the GitHub release for the tag.
 #
 # Asset names are a contract with the downloader, do not change them:
-#   herdr-bar-<os>-<arch>[.exe]   os in {linux, macos, windows},
+#   herdr-command-plugin-<os>-<arch>[.exe]   os in {linux, macos, windows},
 #                                 arch in {x86_64, aarch64}
 #   SHA256SUMS                    "<sha256>  <asset name>" per binary
 
@@ -75,22 +75,22 @@ jobs:
           # Each one builds natively on a runner of its own architecture.
           - target: x86_64-unknown-linux-musl
             runner: ubuntu-24.04
-            asset: herdr-bar-linux-x86_64
+            asset: herdr-command-plugin-linux-x86_64
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
-            asset: herdr-bar-linux-aarch64
+            asset: herdr-command-plugin-linux-aarch64
           - target: x86_64-apple-darwin
             runner: macos-latest
-            asset: herdr-bar-macos-x86_64
+            asset: herdr-command-plugin-macos-x86_64
           - target: aarch64-apple-darwin
             runner: macos-latest
-            asset: herdr-bar-macos-aarch64
+            asset: herdr-command-plugin-macos-aarch64
           - target: x86_64-pc-windows-msvc
             runner: windows-latest
-            asset: herdr-bar-windows-x86_64.exe
+            asset: herdr-command-plugin-windows-x86_64.exe
           - target: aarch64-pc-windows-msvc
             runner: windows-latest
-            asset: herdr-bar-windows-aarch64.exe
+            asset: herdr-command-plugin-windows-aarch64.exe
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -116,7 +116,7 @@ jobs:
           mkdir -p dist
           suffix=""
           case "$TARGET" in *windows*) suffix=".exe" ;; esac
-          cp "target/$TARGET/release/herdr-bar${suffix}" "dist/$ASSET"
+          cp "target/$TARGET/release/herdr-command-plugin${suffix}" "dist/$ASSET"
           ls -l dist
       - name: Check static linkage
         if: contains(matrix.target, 'linux-musl')
@@ -146,7 +146,7 @@ jobs:
       - name: Checksums
         working-directory: dist
         run: |
-          expected="herdr-bar-linux-x86_64 herdr-bar-linux-aarch64 herdr-bar-macos-x86_64 herdr-bar-macos-aarch64 herdr-bar-windows-x86_64.exe herdr-bar-windows-aarch64.exe"
+          expected="herdr-command-plugin-linux-x86_64 herdr-command-plugin-linux-aarch64 herdr-command-plugin-macos-x86_64 herdr-command-plugin-macos-aarch64 herdr-command-plugin-windows-x86_64.exe herdr-command-plugin-windows-aarch64.exe"
           for name in $expected; do
             test -f "$name" || { echo "missing $name"; exit 1; }
           done

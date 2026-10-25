@@ -1,6 +1,6 @@
 [package]
-name = "herdr-bar"
-version = "0.12.0"
+name = "herdr-command-plugin"
+version = "0.13.0"
 edition = "2021"
 rust-version = "1.88"
 description = "Cmd+K command bar for Herdr with agent icons, fuzzy search, and automatic tab titles"
@@ -8,7 +8,7 @@ license = "MIT"
 publish = false
 
 [[bin]]
-name = "herdr-bar"
+name = "herdr-command-plugin"
 path = "src/main.rs"
 
 [features]

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.13.0
+
+- Renamed to **herdr-command-plugin**: the repository, the plugin id, the
+  binary and the `HERDR_COMMAND_PLUGIN_*` environment variables. Install it
+  with `herdr plugin install adhikasp/herdr-command-plugin` and bind
+  `herdr-command-plugin.open`. The plugin keeps its config and state under the
+  new id, so copy `config.json` across from the old `herdr-bar` config
+  directory and uninstall `herdr-bar` (stop its watcher first with
+  `herdr-bar.stop-titles`).
+
 ## 0.12.0
 
 - Add a command palette: `>` or `:` lists herdr's own actions (split, zoom,

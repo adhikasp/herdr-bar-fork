@@ -105,7 +105,7 @@ fn run_cli(spec: &Value, scenario: &Value) -> Value {
     command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     let mut child = {
         let _guard = SPAWN_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-        Guard(command.spawn().expect("spawn herdr-bar"))
+        Guard(command.spawn().expect("spawn herdr-command-plugin"))
     };
     fn collect(mut pipe: impl Read + Send + 'static) -> std::thread::JoinHandle<Vec<u8>> {
         std::thread::spawn(move || {
@@ -136,7 +136,7 @@ fn run_cli(spec: &Value, scenario: &Value) -> Value {
     stdout = stdout.replace(tmp, "<tmp>");
     stderr = stderr.replace(tmp, "<tmp>");
     // A version bump must not need a new golden.
-    stdout = stdout.replace(concat!("herdr-bar ", env!("CARGO_PKG_VERSION"), "\n"), "herdr-bar <version>\n");
+    stdout = stdout.replace(concat!("herdr-command-plugin ", env!("CARGO_PKG_VERSION"), "\n"), "herdr-command-plugin <version>\n");
     dict(vec![
         ("exit", returncode(status)),
         ("stdout", Value::Str(stdout)),
@@ -164,7 +164,7 @@ fn run_watcher(spec: &Value, scenario: &Value) -> Value {
     }
     let mut child = {
         let _guard = SPAWN_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-        Guard(command.spawn().expect("spawn herdr-bar"))
+        Guard(command.spawn().expect("spawn herdr-command-plugin"))
     };
     let mut events: Vec<Value> = scenario.get("events").list_or_empty().to_vec();
     let quiet_for = match scenario.get("quiet") {

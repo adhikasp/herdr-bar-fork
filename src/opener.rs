@@ -4,7 +4,7 @@
 //! so the CLI call lives in the binary and one action works on every platform.
 
 pub const POPUP_ARGS: &[&str] =
-    &["plugin", "pane", "open", "--plugin", "herdr-bar", "--entrypoint", "bar", "--placement", "popup"];
+    &["plugin", "pane", "open", "--plugin", "herdr-command-plugin", "--entrypoint", "bar", "--placement", "popup"];
 
 /// The Herdr binary to shell out to.
 ///
@@ -52,7 +52,7 @@ pub fn open_bar() -> i32 {
         use std::os::unix::process::CommandExt;
         // Replace this process, so nothing lingers behind the popup.
         let error = process.exec();
-        eprintln!("herdr-bar: could not run herdr: {}", crate::host::os_error_str(&error));
+        eprintln!("herdr-command-plugin: could not run herdr: {}", crate::host::os_error_str(&error));
         2
     }
     #[cfg(not(unix))]
@@ -61,7 +61,7 @@ pub fn open_bar() -> i32 {
         match process.status() {
             Ok(status) => status.code().unwrap_or(1),
             Err(error) => {
-                eprintln!("herdr-bar: could not run herdr: {}", crate::host::os_error_str(&error));
+                eprintln!("herdr-command-plugin: could not run herdr: {}", crate::host::os_error_str(&error));
                 2
             }
         }
@@ -89,7 +89,7 @@ mod tests {
         let mut vars = EnvVars::new();
         vars.set("HERDR_BIN_PATH", &herdr);
         let bin = herdr.to_string_lossy().into_owned();
-        let expected: Vec<String> = [bin.as_str(), "plugin", "pane", "open", "--plugin", "herdr-bar", "--entrypoint", "bar", "--placement", "popup"]
+        let expected: Vec<String> = [bin.as_str(), "plugin", "pane", "open", "--plugin", "herdr-command-plugin", "--entrypoint", "bar", "--placement", "popup"]
             .iter()
             .map(|s| s.to_string())
             .collect();

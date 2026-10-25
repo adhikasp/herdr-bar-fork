@@ -98,7 +98,7 @@ impl Session {
                 Ok(())
             });
         }
-        let child = command.spawn().expect("spawn herdr-bar");
+        let child = command.spawn().expect("spawn herdr-command-plugin");
         drop(command);
         drop(slave);
         let master = Arc::new(master);

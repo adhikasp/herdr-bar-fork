@@ -23226,8 +23226,8 @@
    "plugins": [
     {
      "enabled": true,
-     "plugin_id": "herdr-bar",
-     "plugin_root": "/Users/jeffarese/workspace/herdr-bar"
+     "plugin_id": "herdr-command-plugin",
+     "plugin_root": "/Users/jeffarese/workspace/herdr-command-plugin"
     },
     {
      "description": "Automatic tab renaming for agents",
